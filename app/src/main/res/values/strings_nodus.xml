@@ -4,6 +4,7 @@
     <string name="nodus_origin">HTTPS server root URL</string>
     <string name="nodus_pairing_code">Pairing code (XXXXX-XXXXX)</string>
     <string name="nodus_pair">Connect with pairing code</string>
+    <string name="nodus_pairing_connecting">Connecting to Nodus…</string>
     <string name="nodus_cancel_pairing">Cancel pending pairing</string>
     <string name="nodus_pairing_pending">A pairing attempt is pending. Retry uses the exact saved request; leave the code empty.</string>
     <string name="nodus_pairing_ready">Create a five-minute Android pairing code in Nodus web, or scan its QR code with the phone camera.</string>
@@ -28,8 +29,12 @@
     <string name="nodus_pairing_throttled">Too many pairing attempts. Wait before retrying the exact saved request.</string>
     <string name="nodus_pairing_recovery">The server is in recovery mode and cannot pair devices yet. Retry the exact saved request after recovery is complete.</string>
     <string name="nodus_pairing_retry_saved">A different pairing request is already retained. Retry it with the code field empty, or explicitly cancel it first.</string>
+    <string name="nodus_pairing_input_invalid">Check the HTTPS server address and the complete pairing code, then try again.</string>
+    <string name="nodus_pairing_dns_failed">The phone could not find this Nodus server. Check the server address, DNS and network connection.</string>
+    <string name="nodus_pairing_timeout">The Nodus server did not respond in time. The exact request is saved; retry with the code field empty.</string>
+    <string name="nodus_pairing_tls_failed">The phone could not establish a secure HTTPS connection to this Nodus server.</string>
+    <string name="nodus_pairing_network_failed">The phone could not connect to this Nodus server. Check mobile data or Wi-Fi, then retry the saved request.</string>
     <string name="nodus_action_failed">Nodus could not complete this action. Check the HTTPS root, pairing code, server realm, connectivity and retained status. An unknown pairing request is retained for exact retry. No drafts were discarded.</string>
-    <string name="nodus_pair_warning">Pair this device with the displayed Nodus server? The code is single-use. The resulting credential is stored privately and never displayed. Synchronization requires separate activation.</string>
     <string name="nodus_cancel_pairing_warning">Cancel this retained pairing request? Do this only if the web code is known to be invalid. If the network outcome was unknown, first check and revoke unexpected devices in Nodus web.</string>
     <string name="nodus_epoch_warning">Remove the paired-device credential? This changes the credential epoch. Old pending and unknown operations remain retained for manual review and will not be replayed with a later credential.</string>
     <string name="nodus_activate_warning">Activate full synchronization with this server? All shared notes, lists, tags, notebooks, reminders and attachment bytes participate. Local-only notes remain private. Unsupported or inaccessible data remains blocked and is never silently discarded.</string>

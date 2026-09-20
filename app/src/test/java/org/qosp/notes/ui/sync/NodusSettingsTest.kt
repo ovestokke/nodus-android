@@ -42,13 +42,32 @@ class NodusSettingsTest {
         val model=NodusSettingsViewModel(controller)
         model.pair("https://notes.example","23456-789AB")
         val failed=withTimeout(5000){model.state.first{!it.busy && it.message!=null}}
-        assertEquals(R.string.nodus_action_failed,failed.message)
+        assertEquals(R.string.nodus_pairing_input_invalid,failed.message)
         assertFalse(failed.toString().contains("23456-789AB"))
         coEvery {controller.pair(any(),any(),true)} just Runs
         model.pair("https://notes.example","23456-789AB")
         val saved=withTimeout(5000){model.state.first{!it.busy && it.credentialVersion==1}}
         assertEquals(R.string.nodus_paired,saved.message)
         assertFalse(saved.toString().contains("23456-789AB"))
+    }
+
+    @Test fun initialStatusLoadDoesNotDisablePairingAndPairingReportsProgress():Unit=runBlocking {
+        val controller=mockk<NodusController>()
+        val statusGate=CompletableDeferred<Unit>()
+        val pairGate=CompletableDeferred<Unit>()
+        val pairStarted=CompletableDeferred<Unit>()
+        coEvery {controller.status()} coAnswers {statusGate.await();NodusStatus()}
+        coEvery {controller.pair(any(),any(),true)} coAnswers {pairStarted.complete(Unit);pairGate.await()}
+        val model=NodusSettingsViewModel(controller)
+        model.load()
+        model.pair("https://notes.example","23456-789AB")
+        withTimeout(5000){pairStarted.await()}
+        assertTrue(model.state.value.busy)
+        assertTrue(model.state.value.pairingBusy)
+        statusGate.complete(Unit)
+        pairGate.complete(Unit)
+        val completed=withTimeout(5000){model.state.first{!it.busy && it.message==R.string.nodus_paired}}
+        assertFalse(completed.pairingBusy)
     }
 
     @Test fun viewModelPairsWithoutExposingCredentialAndRoutesExplicitConflictActions():Unit=runBlocking {

@@ -13,7 +13,10 @@ internal data class NodusStoredBytes(val id: String, val size: String, val sha25
 /** Only opaque generated names in private storage. Remote names/media types never choose paths. */
 internal data class NodusVerifiedFile(val id: String, val fingerprint: String)
 
-internal class NodusByteStore(directory: File, private val maxTotalBytes: Long = MAX_TOTAL_BYTES, private val publish: (File, File) -> Unit = { from, to -> Os.link(from.path, to.path) }, private val fingerprintFile: (File) -> String = { file ->
+internal class NodusByteStore(directory: File, private val maxTotalBytes: Long = MAX_TOTAL_BYTES, private val publish: (File, File) -> Unit = { from, to ->
+    require(!to.exists()) { "immutable_source_exists" }
+    Os.rename(from.path, to.path)
+}, private val fingerprintFile: (File) -> String = { file ->
     val stat = Os.stat(file.path)
     "${stat.st_dev}:${stat.st_ino}:${stat.st_size}:${stat.st_mtime}:${file.lastModified()}"
 }, private val syncDirectory: (File) -> Unit = { dir ->

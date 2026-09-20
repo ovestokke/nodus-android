@@ -141,7 +141,7 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
             model.setPreference(CloudService.NODUS)
         }
         retained.setOnClickListener { nodus.connections() }
-        pair.setOnClickListener { confirm(R.string.nodus_pair_warning){nodus.pair(origin.text.toString(),pairingCode.text.toString())} }
+        pair.setOnClickListener { nodus.pair(origin.text.toString(),pairingCode.text.toString()) }
         cancelPairing.setOnClickListener { confirm(R.string.nodus_cancel_pairing_warning){nodus.cancelPairing()} }
         activate.setOnClickListener { confirm(R.string.nodus_activate_warning){nodus.activate()} }
         disconnect.setOnClickListener { confirm(R.string.nodus_disconnect_warning){nodus.disconnect(false)} }
@@ -162,6 +162,7 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
                 getString(if(current.synchronized)R.string.nodus_synchronized else R.string.nodus_not_synchronized),
                 getString(R.string.nodus_status,current.pending,current.conflicted,current.blocked,current.unknown),
                 current.issues.joinToString(separator="\n"))
+            pair.setText(if(state.pairingBusy)R.string.nodus_pairing_connecting else R.string.nodus_pair)
             message.text=if(state.busy)getString(R.string.nodus_busy) else state.message?.let(::getString).orEmpty()
             listOf(pair,cancelPairing,activate,disconnect,clear,sync,conflicts,retained).forEach{it.isEnabled = !state.busy}
             activate.isEnabled = !state.busy && current.connectionId!=null && current.tokenSaved && !current.active
