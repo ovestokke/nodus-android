@@ -37,6 +37,7 @@ object TestUtilModule {
                 context = get<Context>(),
                 reminderRepository = get<ReminderRepository>(),
                 noteRepository = get<NoteRepository>(),
+                db = get(),
             )
         }
         single {

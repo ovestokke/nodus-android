@@ -1,0 +1,1407 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "922c13b75eaa5aef790c161186ecac76",
+    "entities": [
+      {
+        "tableName": "notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`title` TEXT NOT NULL, `content` TEXT NOT NULL, `isList` INTEGER NOT NULL, `taskList` TEXT NOT NULL, `isArchived` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `isPinned` INTEGER NOT NULL, `isHidden` INTEGER NOT NULL, `isMarkdownEnabled` INTEGER NOT NULL, `isLocalOnly` INTEGER NOT NULL, `isCompactPreview` INTEGER NOT NULL, `screenAlwaysOn` INTEGER NOT NULL, `creationDate` INTEGER NOT NULL, `modifiedDate` INTEGER NOT NULL, `deletionDate` INTEGER, `attachments` TEXT NOT NULL, `color` TEXT NOT NULL, `notebookId` INTEGER, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, FOREIGN KEY(`notebookId`) REFERENCES `notebooks`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isList",
+            "columnName": "isList",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taskList",
+            "columnName": "taskList",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isArchived",
+            "columnName": "isArchived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPinned",
+            "columnName": "isPinned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isHidden",
+            "columnName": "isHidden",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isMarkdownEnabled",
+            "columnName": "isMarkdownEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isLocalOnly",
+            "columnName": "isLocalOnly",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCompactPreview",
+            "columnName": "isCompactPreview",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenAlwaysOn",
+            "columnName": "screenAlwaysOn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creationDate",
+            "columnName": "creationDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modifiedDate",
+            "columnName": "modifiedDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletionDate",
+            "columnName": "deletionDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "attachments",
+            "columnName": "attachments",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notebookId",
+            "columnName": "notebookId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_notes_notebookId",
+            "unique": false,
+            "columnNames": [
+              "notebookId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_notebookId` ON `${TABLE_NAME}` (`notebookId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "notebooks",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "notebookId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "note_tags",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tagId` INTEGER NOT NULL, `noteId` INTEGER NOT NULL, PRIMARY KEY(`noteId`, `tagId`), FOREIGN KEY(`noteId`) REFERENCES `notes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "tagId",
+            "columnName": "tagId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noteId",
+            "columnName": "noteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "noteId",
+            "tagId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_note_tags_tagId",
+            "unique": false,
+            "columnNames": [
+              "tagId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_note_tags_tagId` ON `${TABLE_NAME}` (`tagId`)"
+          },
+          {
+            "name": "index_note_tags_noteId",
+            "unique": false,
+            "columnNames": [
+              "noteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_note_tags_noteId` ON `${TABLE_NAME}` (`noteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "notes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "noteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "tags",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "tagId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "notebooks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`notebookName` TEXT NOT NULL, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "columnName": "notebookName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "tags",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "reminders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, `noteId` INTEGER NOT NULL, `date` INTEGER NOT NULL, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `alarmFingerprint` TEXT NOT NULL DEFAULT '', FOREIGN KEY(`noteId`) REFERENCES `notes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noteId",
+            "columnName": "noteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alarmFingerprint",
+            "columnName": "alarmFingerprint",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reminders_noteId",
+            "unique": false,
+            "columnNames": [
+              "noteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reminders_noteId` ON `${TABLE_NAME}` (`noteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "notes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "noteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "reminder_alarm_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `noteId` INTEGER NOT NULL, `date` INTEGER NOT NULL, `name` TEXT NOT NULL, `fingerprint` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noteId",
+            "columnName": "noteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fingerprint",
+            "columnName": "fingerprint",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "cloud_ids",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`mappingId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `localNoteId` INTEGER NOT NULL, `remoteNoteId` INTEGER, `provider` TEXT, `extras` TEXT, `isDeletedLocally` INTEGER NOT NULL, `isBeingUpdated` INTEGER NOT NULL, `storageUri` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "mappingId",
+            "columnName": "mappingId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localNoteId",
+            "columnName": "localNoteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remoteNoteId",
+            "columnName": "remoteNoteId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "provider",
+            "columnName": "provider",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "extras",
+            "columnName": "extras",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isDeletedLocally",
+            "columnName": "isDeletedLocally",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isBeingUpdated",
+            "columnName": "isBeingUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storageUri",
+            "columnName": "storageUri",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "mappingId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "cloud_ids_id_index",
+            "unique": false,
+            "columnNames": [
+              "localNoteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `cloud_ids_id_index` ON `${TABLE_NAME}` (`localNoteId`)"
+          },
+          {
+            "name": "cloud_ids_id_provider_index",
+            "unique": false,
+            "columnNames": [
+              "localNoteId",
+              "provider"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `cloud_ids_id_provider_index` ON `${TABLE_NAME}` (`localNoteId`, `provider`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nodus_integration",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `activeConnectionId` TEXT, `configuredConnectionId` TEXT, `installationDeviceId` TEXT, `credentialEpoch` TEXT, `origin` TEXT, `generation` INTEGER NOT NULL, `intentRow` INTEGER NOT NULL, `operationRow` INTEGER NOT NULL, `intentEnded` INTEGER NOT NULL, `operationEnded` INTEGER NOT NULL, `retryAtMillis` INTEGER, `attachmentAfter` TEXT NOT NULL, `projectionAfter` TEXT NOT NULL, `lastError` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeConnectionId",
+            "columnName": "activeConnectionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "configuredConnectionId",
+            "columnName": "configuredConnectionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "installationDeviceId",
+            "columnName": "installationDeviceId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "credentialEpoch",
+            "columnName": "credentialEpoch",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "origin",
+            "columnName": "origin",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "generation",
+            "columnName": "generation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intentRow",
+            "columnName": "intentRow",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationRow",
+            "columnName": "operationRow",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intentEnded",
+            "columnName": "intentEnded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationEnded",
+            "columnName": "operationEnded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryAtMillis",
+            "columnName": "retryAtMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "attachmentAfter",
+            "columnName": "attachmentAfter",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "projectionAfter",
+            "columnName": "projectionAfter",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "nodus_captures",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `connectionId` TEXT NOT NULL, `deviceId` TEXT NOT NULL, `credentialEpoch` TEXT NOT NULL, `generation` INTEGER NOT NULL, `beforeBody` TEXT NOT NULL, `afterBody` TEXT NOT NULL, `removedReminders` TEXT NOT NULL, `state` TEXT NOT NULL, `errorCode` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "credentialEpoch",
+            "columnName": "credentialEpoch",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generation",
+            "columnName": "generation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "beforeBody",
+            "columnName": "beforeBody",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "afterBody",
+            "columnName": "afterBody",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "removedReminders",
+            "columnName": "removedReminders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "errorCode",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "nodus_connections",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `origin` TEXT NOT NULL, `ownerKey` TEXT NOT NULL, `deviceId` TEXT NOT NULL, `credentialEpoch` TEXT NOT NULL, `realmId` TEXT, `inactiveGraph` TEXT, `checkpointDeviceId` TEXT, `checkpointEpoch` TEXT, `checkpointRemovedReminders` TEXT, PRIMARY KEY(`connectionId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origin",
+            "columnName": "origin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerKey",
+            "columnName": "ownerKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "credentialEpoch",
+            "columnName": "credentialEpoch",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "realmId",
+            "columnName": "realmId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "inactiveGraph",
+            "columnName": "inactiveGraph",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkpointDeviceId",
+            "columnName": "checkpointDeviceId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkpointEpoch",
+            "columnName": "checkpointEpoch",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkpointRemovedReminders",
+            "columnName": "checkpointRemovedReminders",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nodus_connections_origin_ownerKey",
+            "unique": true,
+            "columnNames": [
+              "origin",
+              "ownerKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nodus_connections_origin_ownerKey` ON `${TABLE_NAME}` (`origin`, `ownerKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nodus_mappings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `mappingId` TEXT NOT NULL, `resourceType` TEXT NOT NULL, `parentId` TEXT NOT NULL, `wireId` TEXT NOT NULL, `localKey` TEXT NOT NULL, `localRowId` INTEGER, `localRowDetached` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`connectionId`, `mappingId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mappingId",
+            "columnName": "mappingId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceType",
+            "columnName": "resourceType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wireId",
+            "columnName": "wireId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localKey",
+            "columnName": "localKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRowId",
+            "columnName": "localRowId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "localRowDetached",
+            "columnName": "localRowDetached",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "mappingId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nodus_mappings_connectionId_resourceType_parentId_wireId",
+            "unique": true,
+            "columnNames": [
+              "connectionId",
+              "resourceType",
+              "parentId",
+              "wireId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nodus_mappings_connectionId_resourceType_parentId_wireId` ON `${TABLE_NAME}` (`connectionId`, `resourceType`, `parentId`, `wireId`)"
+          },
+          {
+            "name": "index_nodus_mappings_connectionId_resourceType_parentId_localKey",
+            "unique": true,
+            "columnNames": [
+              "connectionId",
+              "resourceType",
+              "parentId",
+              "localKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nodus_mappings_connectionId_resourceType_parentId_localKey` ON `${TABLE_NAME}` (`connectionId`, `resourceType`, `parentId`, `localKey`)"
+          },
+          {
+            "name": "index_nodus_mappings_connectionId_resourceType_parentId_localRowId",
+            "unique": true,
+            "columnNames": [
+              "connectionId",
+              "resourceType",
+              "parentId",
+              "localRowId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nodus_mappings_connectionId_resourceType_parentId_localRowId` ON `${TABLE_NAME}` (`connectionId`, `resourceType`, `parentId`, `localRowId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nodus_snapshots",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `resourceType` TEXT NOT NULL, `wireId` TEXT NOT NULL, `revision` TEXT NOT NULL, `body` BLOB NOT NULL, `tombstone` INTEGER NOT NULL, PRIMARY KEY(`connectionId`, `resourceType`, `wireId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceType",
+            "columnName": "resourceType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wireId",
+            "columnName": "wireId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tombstone",
+            "columnName": "tombstone",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "resourceType",
+            "wireId"
+          ]
+        }
+      },
+      {
+        "tableName": "nodus_tracking",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `mappingId` TEXT NOT NULL, `generation` INTEGER NOT NULL, `baseRevision` TEXT, `baseBody` BLOB, PRIMARY KEY(`connectionId`, `mappingId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mappingId",
+            "columnName": "mappingId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generation",
+            "columnName": "generation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseRevision",
+            "columnName": "baseRevision",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "baseBody",
+            "columnName": "baseBody",
+            "affinity": "BLOB"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "mappingId"
+          ]
+        }
+      },
+      {
+        "tableName": "nodus_intents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `intentId` TEXT NOT NULL, `mappingId` TEXT NOT NULL, `generation` INTEGER NOT NULL, `body` BLOB NOT NULL, PRIMARY KEY(`connectionId`, `intentId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intentId",
+            "columnName": "intentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mappingId",
+            "columnName": "mappingId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generation",
+            "columnName": "generation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "intentId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nodus_intents_connectionId_mappingId_generation",
+            "unique": true,
+            "columnNames": [
+              "connectionId",
+              "mappingId",
+              "generation"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nodus_intents_connectionId_mappingId_generation` ON `${TABLE_NAME}` (`connectionId`, `mappingId`, `generation`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nodus_outbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `operationId` TEXT NOT NULL, `intentId` TEXT NOT NULL, `mappingId` TEXT NOT NULL, `generation` INTEGER NOT NULL, `apiVersion` TEXT NOT NULL, `method` TEXT NOT NULL, `path` TEXT NOT NULL, `contentType` TEXT NOT NULL, `body` BLOB, `sourceFileId` TEXT, `sourceSha256` TEXT, `sourceSize` TEXT, `deviceId` TEXT NOT NULL, `requestId` TEXT NOT NULL, `credentialEpoch` TEXT NOT NULL, `state` TEXT NOT NULL, PRIMARY KEY(`connectionId`, `operationId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationId",
+            "columnName": "operationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intentId",
+            "columnName": "intentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mappingId",
+            "columnName": "mappingId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generation",
+            "columnName": "generation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apiVersion",
+            "columnName": "apiVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "method",
+            "columnName": "method",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "path",
+            "columnName": "path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentType",
+            "columnName": "contentType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "BLOB"
+          },
+          {
+            "fieldPath": "sourceFileId",
+            "columnName": "sourceFileId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceSha256",
+            "columnName": "sourceSha256",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceSize",
+            "columnName": "sourceSize",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requestId",
+            "columnName": "requestId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "credentialEpoch",
+            "columnName": "credentialEpoch",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "operationId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nodus_outbox_connectionId_credentialEpoch_deviceId_requestId",
+            "unique": true,
+            "columnNames": [
+              "connectionId",
+              "credentialEpoch",
+              "deviceId",
+              "requestId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nodus_outbox_connectionId_credentialEpoch_deviceId_requestId` ON `${TABLE_NAME}` (`connectionId`, `credentialEpoch`, `deviceId`, `requestId`)"
+          },
+          {
+            "name": "index_nodus_outbox_connectionId_intentId",
+            "unique": false,
+            "columnNames": [
+              "connectionId",
+              "intentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nodus_outbox_connectionId_intentId` ON `${TABLE_NAME}` (`connectionId`, `intentId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nodus_cursors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `apiVersion` TEXT NOT NULL, `stream` TEXT NOT NULL, `cursor` TEXT NOT NULL, `until` TEXT, PRIMARY KEY(`connectionId`, `apiVersion`, `stream`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apiVersion",
+            "columnName": "apiVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stream",
+            "columnName": "stream",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cursor",
+            "columnName": "cursor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "until",
+            "columnName": "until",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "apiVersion",
+            "stream"
+          ]
+        }
+      },
+      {
+        "tableName": "nodus_evidence",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `evidenceId` TEXT NOT NULL, `operationId` TEXT, `credentialEpoch` TEXT, `kind` TEXT NOT NULL, `httpStatus` INTEGER, `body` BLOB, `conflictId` TEXT, `errorCode` TEXT, `resourceType` TEXT, `resourceId` TEXT, `resourceRevision` TEXT, `resourceRevisionDigits` INTEGER, PRIMARY KEY(`connectionId`, `evidenceId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "evidenceId",
+            "columnName": "evidenceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationId",
+            "columnName": "operationId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "credentialEpoch",
+            "columnName": "credentialEpoch",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "httpStatus",
+            "columnName": "httpStatus",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "BLOB"
+          },
+          {
+            "fieldPath": "conflictId",
+            "columnName": "conflictId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "errorCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "resourceType",
+            "columnName": "resourceType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "resourceId",
+            "columnName": "resourceId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "resourceRevision",
+            "columnName": "resourceRevision",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "resourceRevisionDigits",
+            "columnName": "resourceRevisionDigits",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "evidenceId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nodus_evidence_connectionId_operationId",
+            "unique": false,
+            "columnNames": [
+              "connectionId",
+              "operationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nodus_evidence_connectionId_operationId` ON `${TABLE_NAME}` (`connectionId`, `operationId`)"
+          },
+          {
+            "name": "index_nodus_evidence_connectionId_resourceType_resourceId_resourceRevisionDigits_resourceRevision",
+            "unique": false,
+            "columnNames": [
+              "connectionId",
+              "resourceType",
+              "resourceId",
+              "resourceRevisionDigits",
+              "resourceRevision"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nodus_evidence_connectionId_resourceType_resourceId_resourceRevisionDigits_resourceRevision` ON `${TABLE_NAME}` (`connectionId`, `resourceType`, `resourceId`, `resourceRevisionDigits`, `resourceRevision`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nodus_conflicts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `conflictId` TEXT NOT NULL, `state` TEXT NOT NULL, `parentId` TEXT NOT NULL, `body` BLOB NOT NULL, PRIMARY KEY(`connectionId`, `conflictId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conflictId",
+            "columnName": "conflictId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "conflictId"
+          ]
+        }
+      },
+      {
+        "tableName": "nodus_blobs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `blobId` TEXT NOT NULL, `size` TEXT, `sha256` TEXT, `sourceUri` TEXT, `state` TEXT NOT NULL, `errorCode` TEXT, `reservationOperationId` TEXT, `uploadOperationId` TEXT, PRIMARY KEY(`connectionId`, `blobId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blobId",
+            "columnName": "blobId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sha256",
+            "columnName": "sha256",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceUri",
+            "columnName": "sourceUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "errorCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reservationOperationId",
+            "columnName": "reservationOperationId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "uploadOperationId",
+            "columnName": "uploadOperationId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "blobId"
+          ]
+        }
+      },
+      {
+        "tableName": "nodus_attachments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`connectionId` TEXT NOT NULL, `noteId` TEXT NOT NULL, `attachmentId` TEXT NOT NULL, `blobId` TEXT NOT NULL, `sourceUri` TEXT, `state` TEXT NOT NULL, `errorCode` TEXT, `draftBody` BLOB, `operationId` TEXT, PRIMARY KEY(`connectionId`, `noteId`, `attachmentId`))",
+        "fields": [
+          {
+            "fieldPath": "connectionId",
+            "columnName": "connectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noteId",
+            "columnName": "noteId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attachmentId",
+            "columnName": "attachmentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blobId",
+            "columnName": "blobId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceUri",
+            "columnName": "sourceUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "errorCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "draftBody",
+            "columnName": "draftBody",
+            "affinity": "BLOB"
+          },
+          {
+            "fieldPath": "operationId",
+            "columnName": "operationId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "connectionId",
+            "noteId",
+            "attachmentId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '922c13b75eaa5aef790c161186ecac76')"
+    ]
+  }
+}

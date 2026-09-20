@@ -58,7 +58,7 @@ object ExportNotesContract : ActivityResultContract<None?, Uri?>() {
         return Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "application/zip"
-            putExtra(Intent.EXTRA_TITLE, "quillpad_backup_${Instant.now().epochSecond}.zip")
+            putExtra(Intent.EXTRA_TITLE, "nodus_backup_${Instant.now().epochSecond}.zip")
         }
     }
 

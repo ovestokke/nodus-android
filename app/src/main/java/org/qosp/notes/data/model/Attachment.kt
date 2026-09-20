@@ -11,6 +11,7 @@ data class Attachment(
     val path: String = "",
     val description: String = "",
     val fileName: String = "",
+    val localKey: String? = null,
 ) : Parcelable {
     enum class Type { AUDIO, IMAGE, VIDEO, GENERIC }
 

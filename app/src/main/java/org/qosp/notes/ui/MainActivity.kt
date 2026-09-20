@@ -24,6 +24,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -41,6 +42,7 @@ import org.qosp.notes.data.sync.core.BackendProvider
 import org.qosp.notes.data.sync.fs.StorageConfig
 import org.qosp.notes.data.sync.fs.toFriendlyString
 import org.qosp.notes.data.sync.nextcloud.NextcloudConfig
+import org.qosp.notes.data.sync.nodus.NodusPairingLink
 import org.qosp.notes.databinding.ActivityMainBinding
 import org.qosp.notes.preferences.CloudService
 import org.qosp.notes.preferences.SortNavdrawerNotebooksMethod
@@ -148,6 +150,12 @@ class MainActivity : BaseActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
+        if(intent.action==Intent.ACTION_VIEW && intent.data?.scheme=="nodus") {
+            val pairing=runCatching { NodusPairingLink.parse(requireNotNull(intent.data).toString()) }.getOrNull() ?: return
+            intent.data=null
+            navController.navigateSafely(R.id.fragment_sync_settings,bundleOf("pairingOrigin" to pairing.origin,"pairingCode" to pairing.code))
+            return
+        }
         when (intent.action) {
             Intent.ACTION_SEND -> {
                 val title = intent.getStringExtra(Intent.EXTRA_TITLE) ?: ""
@@ -272,7 +280,12 @@ class MainActivity : BaseActivity() {
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                backendProvider.syncProvider.collect { backend ->
+                combine(backendProvider.syncProvider,preferenceRepository.get<CloudService>()) { backend,selected -> backend to selected }.collect { (backend,selected) ->
+                    if(selected==CloudService.NODUS) {
+                        textViewUsername.text=getString(R.string.preferences_cloud_service)
+                        textViewProvider.text=getString(R.string.preferences_cloud_service_nodus)
+                        return@collect
+                    }
                     when (backend?.type) {
                         CloudService.NEXTCLOUD -> {
                             NextcloudConfig.fromPreferences(preferenceRepository)
@@ -295,7 +308,7 @@ class MainActivity : BaseActivity() {
                             }
                         }
 
-                        CloudService.DISABLED, null -> {
+                        CloudService.DISABLED, CloudService.NODUS, null -> {
                             textViewUsername.text = getString(R.string.preferences_cloud_service)
                             textViewProvider.text = getString(R.string.preferences_cloud_service_disabled)
                         }

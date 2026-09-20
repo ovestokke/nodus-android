@@ -26,7 +26,7 @@ updates:
     items:
       - Add a widget to your home screen to quickly access your pinned notes and tasks.
   - id: 3
-    title: What's New in Quillpad
+    title: What's New in Nodus
     items:
       - Quickly report issues using the new "Send Logs" option in the About section.
       - The app now gives clearer, more specific error messages regarding Nextcloud Sync.

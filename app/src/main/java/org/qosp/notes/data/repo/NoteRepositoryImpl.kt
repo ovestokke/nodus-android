@@ -44,8 +44,12 @@ class NoteRepositoryImpl(
     private val synchronizeNotes: SynchronizeNotes,
     private val processRemoteActions: ProcessRemoteActions,
     private val syncingScope: SyncScope,
-    private val toaster: Toaster
+    private val toaster: Toaster,
+    private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusAppBridge? = null,
+    private val nodusController: org.qosp.notes.data.sync.nodus.integration.NodusController? = null
 ) : NoteRepository {
+
+    private suspend fun <T> capture(shared: Boolean = true, block: suspend () -> T): T = nodus?.mutate(shared, block=block) ?: block()
 
     private val tag = NoteRepositoryImpl::class.java.simpleName
     private val syncMutex = Mutex()
@@ -57,6 +61,7 @@ class NoteRepositoryImpl(
     }
 
     override suspend fun syncNotes(): BaseResult {
+        nodusController?.syncIfSelected()?.let { return it }
         Log.d(tag, "syncNotes: Starting synchronization")
 
         val syncProvider = backendProvider.syncProvider.value
@@ -176,7 +181,7 @@ class NoteRepositoryImpl(
 
     override suspend fun insertNote(note: Note, sync: Boolean): Long {
         Log.d(tag, "insertNote: Creating note '${note.title}', isLocalOnly=${note.isLocalOnly}")
-        val noteId = noteDao.insert(note.toEntity())
+        val noteId = capture(sync) { noteDao.insert(note.copy(taskList=note.taskList.map { it.copy(localKey=java.util.UUID.randomUUID().toString()) },attachments=note.attachments.map { it.copy(localKey=java.util.UUID.randomUUID().toString()) }).toEntity()) }
         if (note.isLocalOnly.not() && backendProvider.isSyncing && sync) {
             val note1 = note.copy(id = noteId)
             processRemoteActions(note1.id, Create(note1))
@@ -188,7 +193,7 @@ class NoteRepositoryImpl(
 
     private suspend fun updateNote(note: Note, sync: Boolean) {
         Log.d(tag, "updateNote: Updating note ID=${note.id}, title='${note.title}'")
-        noteDao.update(note.toEntity())
+        capture(sync) { noteDao.update(note.toEntity()) }
         if (note.isLocalOnly.not() && backendProvider.isSyncing && sync) {
             processRemoteActions(note.id, Update(note))
         }
@@ -199,8 +204,10 @@ class NoteRepositoryImpl(
         val entities = notes.map { it.toEntity().copy(isDeleted = true, deletionDate = Instant.now().epochSecond) }
             .toTypedArray<NoteEntity>()
 
-        noteDao.update(*entities)
-        reminderDao.deleteIfNoteIdIn(notes.map { it.id })
+        capture(sync) {
+            noteDao.update(*entities)
+            reminderDao.deleteIfNoteIdIn(notes.map { it.id })
+        }
         cleanMappingsForLocalNotes(*notes)
         notes.filterNot { it.isLocalOnly }.forEach {
             if (sync) processRemoteActions(it.id, Delete(it))
@@ -212,7 +219,7 @@ class NoteRepositoryImpl(
         val array = notes
             .map { it.toEntity().copy(isDeleted = false, deletionDate = null) }
             .toTypedArray()
-        noteDao.update(*array)
+        capture { noteDao.update(*array) }
         cleanMappingsForLocalNotes(*notes)
         if (backendProvider.isSyncing) {
             backendProvider.syncProvider.value?.let { syncProvider ->
@@ -237,24 +244,25 @@ class NoteRepositoryImpl(
     override suspend fun deleteNotes(vararg notes: Note, sync: Boolean) {
         Log.d(tag, "deleteNotes: Permanently deleting ${notes.size} notes")
         val array = notes.map { it.toEntity() }.toTypedArray()
-        noteDao.delete(*array)
+        capture(sync) { noteDao.delete(*array) }
         if (sync) notes.filterNot { it.isLocalOnly }.forEach {
             processRemoteActions(it.id, Delete(it))
         }
     }
 
     override suspend fun discardEmptyNotes(): Boolean {
-        val notes = noteDao.getAllBlankTitleNotes().first().filter { it.isEmpty() }.toTypedArray()
+        val notes = noteDao.getAllBlankTitleNotes().first().filter { it.isEmpty() && (nodus?.cleanupEligible(it.id) != false) }.toTypedArray()
         Log.d(tag, "discardEmptyNotes: Found ${notes.size} empty notes to discard")
         deleteNotes(*notes)
         return notes.isNotEmpty()
     }
 
     override suspend fun permanentlyDeleteNotesInBin() {
-        val noteIds = noteDao.getDeleted(defaultOf()).first().map { it.id }.toLongArray()
-        Log.d(tag, "permanentlyDeleteNotesInBin: Permanently deleting ${noteIds.size} notes from bin")
-        idMappingDao.deleteByLocalId(*noteIds)
-        noteDao.permanentlyDeleteNotesInBin()
+        val notes = noteDao.getDeleted(defaultOf()).first().toTypedArray()
+        capture {
+            idMappingDao.deleteByLocalId(*notes.map { it.id }.toLongArray())
+            noteDao.delete(*notes.map { it.toEntity() }.toTypedArray())
+        }
     }
 
     override fun getById(noteId: Long): Flow<Note?> {

@@ -15,6 +15,7 @@ class MediaStorageManager(
     private val context: Context,
     private val noteRepository: NoteRepository,
     private val mediaFolder: String,
+    private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusAppBridge? = null,
 ) {
     private val directory get() = File(context.filesDir, mediaFolder)
         .also { it.mkdir() }
@@ -35,7 +36,7 @@ class MediaStorageManager(
             .getAll()
             .first()
             .flatMap { it.attachments }
-            .map { it.path }
+            .map { it.path } + nodus?.retainedAttachmentPaths().orEmpty()
 
         val files = directory
             .list()

@@ -8,10 +8,13 @@ import org.qosp.notes.data.model.Notebook
 class NotebookRepository(
     private val notebookDao: NotebookDao,
     private val noteRepository: NoteRepository,
+    private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusAppBridge? = null,
 ) {
 
+    private suspend fun <T> capture(block: suspend () -> T): T = nodus?.mutate(block=block) ?: block()
+
     suspend fun insert(notebook: Notebook): Long {
-        return notebookDao.insert(notebook)
+        return capture { notebookDao.insert(notebook) }
     }
 
     suspend fun delete(vararg notebooks: Notebook) {
@@ -20,11 +23,11 @@ class NotebookRepository(
             .flatten()
             .filterNot { it.isLocalOnly }
 
-        notebookDao.delete(*notebooks)
+        capture { notebookDao.delete(*notebooks) }
     }
 
     suspend fun update(vararg notebooks: Notebook, shouldSync: Boolean = true) {
-        notebookDao.update(*notebooks)
+        capture { notebookDao.update(*notebooks) }
     }
 
     fun getById(notebookId: Long): Flow<Notebook?> {

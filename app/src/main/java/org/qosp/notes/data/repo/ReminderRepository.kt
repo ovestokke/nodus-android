@@ -4,7 +4,9 @@ import kotlinx.coroutines.flow.Flow
 import org.qosp.notes.data.dao.ReminderDao
 import org.qosp.notes.data.model.Reminder
 
-class ReminderRepository(private val reminderDao: ReminderDao) {
+class ReminderRepository(private val reminderDao: ReminderDao, private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusAppBridge? = null) {
+
+    private suspend fun <T> capture(removal: Boolean = false, block: suspend () -> T): T = nodus?.mutate(userReminderRemoval=removal,block=block) ?: block()
 
     fun getAll(): Flow<List<Reminder>> {
         return reminderDao.getAll()
@@ -19,22 +21,24 @@ class ReminderRepository(private val reminderDao: ReminderDao) {
     }
 
     suspend fun insert(reminder: Reminder): Long {
-        return reminderDao.insert(reminder)
+        return capture { reminderDao.insert(reminder) }
     }
 
     suspend fun update(vararg reminders: Reminder) {
-        reminderDao.update(*reminders)
+        capture { reminderDao.update(*reminders) }
     }
 
     suspend fun deleteById(id: Long) {
-        reminderDao.deleteById(id)
+        capture(true) { reminderDao.deleteById(id) }
     }
 
+    suspend fun consumeById(id: Long) { reminderDao.deleteById(id) }
+
     suspend fun deleteByNoteId(noteId: Long) {
-        reminderDao.deleteByNoteId(noteId)
+        capture(true) { reminderDao.deleteByNoteId(noteId) }
     }
 
     suspend fun copyReminders(fromNoteId: Long, toNoteId: Long) {
-        reminderDao.copyReminders(fromNoteId, toNoteId)
+        capture { reminderDao.copyReminders(fromNoteId, toNoteId) }
     }
 }

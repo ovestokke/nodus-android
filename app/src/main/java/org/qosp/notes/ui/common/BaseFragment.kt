@@ -21,7 +21,7 @@ open class BaseFragment(@LayoutRes resId: Int) : Fragment(resId) {
     protected open val hasMenu: Boolean = true
     protected open val hasDefaultAnimation: Boolean = true
 
-    protected val TAG = this::class.simpleName ?: "Quillpad"
+    protected val TAG = this::class.simpleName ?: "Nodus"
 
     val activityModel: ActivityViewModel by activityViewModel()
     protected open val toolbar: Toolbar? = null

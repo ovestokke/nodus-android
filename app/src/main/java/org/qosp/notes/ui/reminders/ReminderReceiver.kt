@@ -24,7 +24,7 @@ class ReminderReceiver : BroadcastReceiver(), KoinComponent {
             REMINDER_HAS_FIRED -> {
                 val reminderId = intent.extras?.getLong("reminderId") ?: return@runBlocking
                 val noteId = intent.extras?.getLong("noteId") ?: return@runBlocking
-                reminderManager.sendNotification(reminderId, noteId)
+                reminderManager.sendNotification(reminderId, noteId,if(intent.hasExtra("dueAt"))intent.getLongExtra("dueAt",0) else null,intent.getStringExtra("reminderName"),intent.getStringExtra("alarmFingerprint"))
             }
         }
     }

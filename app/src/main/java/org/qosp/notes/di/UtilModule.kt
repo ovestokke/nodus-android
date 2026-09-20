@@ -10,6 +10,8 @@ import org.qosp.notes.components.MediaStorageManager
 import org.qosp.notes.components.backup.BackupManager
 import org.qosp.notes.components.workers.BinCleaningWorker
 import org.qosp.notes.components.workers.SyncWorker
+import org.qosp.notes.components.workers.ReminderReconcileWorker
+import org.qosp.notes.components.workers.NodusSyncWorker
 import org.qosp.notes.ui.reminders.ReminderManager
 import org.qosp.notes.ui.utils.ConnectionManager
 import org.qosp.notes.ui.utils.Toaster
@@ -21,12 +23,15 @@ object UtilModule {
 
         workerOf(::BinCleaningWorker)
         workerOf(::SyncWorker)
+        workerOf(::NodusSyncWorker)
+        workerOf(::ReminderReconcileWorker)
 
         single {
             MediaStorageManager(
                 context = androidContext(),
                 noteRepository = get(),
-                mediaFolder = App.MEDIA_FOLDER
+                mediaFolder = App.MEDIA_FOLDER,
+                nodus = get()
             )
         }
 

@@ -16,7 +16,8 @@ import org.qosp.notes.preferences.SyncMode
 
 class SettingsViewModel(
     private val preferenceRepository: PreferenceRepository,
-    private val noteRepository: NoteRepository
+    private val noteRepository: NoteRepository,
+    private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusController
 ) : ViewModel() {
 
     val appPreferences = preferenceRepository.getAll()
@@ -31,12 +32,12 @@ class SettingsViewModel(
             }
         }
         viewModelScope.launch(Dispatchers.IO) {
-            preferenceRepository.set(pref)
+            if (pref is CloudService) nodus.select(pref) else preferenceRepository.set(pref)
         }
     }
 
     suspend fun <T> setPreferenceSuspending(pref: T) where T : Enum<T>, T : EnumPreference {
-        preferenceRepository.set(pref)
+        if (pref is CloudService) nodus.select(pref) else preferenceRepository.set(pref)
     }
 
     fun getEncryptedString(key: String): Flow<String> {

@@ -22,7 +22,8 @@ output-metadata.json
 app/build/
 buildSrc/build/
 
-# gemini-cli settings
+# Local agent-generated previews and settings
+/.pi/
 .gemini/
 
 # GitHub App credentials

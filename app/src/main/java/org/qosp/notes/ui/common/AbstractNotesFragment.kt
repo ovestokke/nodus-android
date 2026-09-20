@@ -244,7 +244,7 @@ abstract class AbstractNotesFragment(@LayoutRes resId: Int) : BaseFragment(resId
                     sendMessage(getString(R.string.indicator_empty_note_discarded))
                 }
 
-                if (model.isSyncingEnabled() && !recyclerAdapter.searchMode) {
+                if ((model.isSyncingEnabled() || activityModel.isNodusSelected()) && !recyclerAdapter.searchMode) {
                     activityModel
                         .syncAsync()
                         .await()

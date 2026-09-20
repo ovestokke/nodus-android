@@ -23,7 +23,7 @@ class EditReminderViewModel(
     fun insertReminder(reminder: Reminder) {
         viewModelScope.launch(Dispatchers.IO) {
             val id = reminderRepository.insert(reminder)
-            reminderManager.schedule(id, reminder.date, reminder.noteId)
+            reminderManager.schedule(id, reminder.date, reminder.noteId,reminder.name,reminder.alarmFingerprint)
         }
     }
 
@@ -37,8 +37,8 @@ class EditReminderViewModel(
     fun updateReminder(reminder: Reminder) {
         viewModelScope.launch(Dispatchers.IO) {
             reminderRepository.update(reminder)
+            reminderManager.schedule(reminder.id, reminder.date, reminder.noteId,reminder.name,reminder.alarmFingerprint)
         }
-        reminderManager.schedule(reminder.id, reminder.date, reminder.noteId)
     }
 
     fun setDate(

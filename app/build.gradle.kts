@@ -17,7 +17,7 @@ android {
     namespace = "org.qosp.notes"
 
     defaultConfig {
-        applicationId = "io.github.quillpad"
+        applicationId = "com.vstokke.nodus"
         minSdk = 24
         targetSdk = 37
         versionCode = 55
@@ -115,7 +115,10 @@ android {
             )
         )
     }
+    testOptions { unitTests.isIncludeAndroidResources = true }
+
     sourceSets {
+        getByName("test").resources.srcDir("$projectDir/schemas")
         // Adds exported schema location as test app assets.
         getByName("androidTest").assets.directories.add("$projectDir/schemas")
     }
@@ -155,6 +158,8 @@ dependencies {
 
     // Test
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk.android)
     testImplementation(libs.mockk.agent)

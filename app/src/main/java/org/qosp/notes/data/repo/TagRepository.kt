@@ -14,7 +14,10 @@ class TagRepository(
     private val noteTagDao: NoteTagDao,
     private val noteRepository: NoteRepository,
     private val syncScope: SyncScope,
+    private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusAppBridge? = null,
 ) {
+
+    private suspend fun <T> capture(block: suspend () -> T): T = nodus?.mutate(block=block) ?: block()
 
     fun getAll(): Flow<List<Tag>> {
         return tagDao.getAll()
@@ -33,7 +36,7 @@ class TagRepository(
     }
 
     suspend fun insert(tag: Tag): Long {
-        return tagDao.insert(tag)
+        return capture { tagDao.insert(tag) }
     }
 
     suspend fun delete(vararg tags: Tag, shouldSync: Boolean = true) {
@@ -42,7 +45,7 @@ class TagRepository(
             .flatten()
             .filterNot { it.isLocalOnly }
 
-        tagDao.delete(*tags)
+        capture { tagDao.delete(*tags) }
 
         if (shouldSync) {
             syncScope.launch {
@@ -52,11 +55,11 @@ class TagRepository(
     }
 
     suspend fun update(vararg tags: Tag) {
-        tagDao.update(*tags)
+        capture { tagDao.update(*tags) }
     }
 
     suspend fun addTagToNote(tagId: Long, noteId: Long, shouldSync: Boolean = true) {
-        noteTagDao.insert(NoteTagJoin(tagId, noteId))
+        capture { noteTagDao.insert(NoteTagJoin(tagId, noteId)) }
 
         if (shouldSync) {
             syncScope.launch {
@@ -67,7 +70,7 @@ class TagRepository(
     }
 
     suspend fun deleteTagFromNote(tagId: Long, noteId: Long, shouldSync: Boolean = true) {
-        noteTagDao.delete(NoteTagJoin(tagId, noteId))
+        capture { noteTagDao.delete(NoteTagJoin(tagId, noteId)) }
 
         if (shouldSync) {
             syncScope.launch {
@@ -78,6 +81,6 @@ class TagRepository(
     }
 
     suspend fun copyTags(fromNoteId: Long, toNoteId: Long) {
-        noteTagDao.copyTags(fromNoteId, toNoteId)
+        capture { noteTagDao.copyTags(fromNoteId, toNoteId) }
     }
 }

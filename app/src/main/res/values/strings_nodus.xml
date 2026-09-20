@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="preferences_cloud_service_nodus" translatable="false">Nodus</string>
+    <string name="nodus_origin">HTTPS server root URL</string>
+    <string name="nodus_pairing_code">Pairing code (XXXXX-XXXXX)</string>
+    <string name="nodus_pair">Connect with pairing code</string>
+    <string name="nodus_cancel_pairing">Cancel pending pairing</string>
+    <string name="nodus_pairing_pending">A pairing attempt is pending. Retry uses the exact saved request; leave the code empty.</string>
+    <string name="nodus_pairing_ready">Create a five-minute Android pairing code in Nodus web, or scan its QR code with the phone camera.</string>
+    <string name="nodus_credential_saved">Paired-device credential saved securely</string>
+    <string name="nodus_credential_missing">No paired-device credential saved</string>
+    <string name="nodus_activate">Activate synchronization</string>
+    <string name="nodus_disconnect">Disconnect (retain credentials and drafts)</string>
+    <string name="nodus_clear">Remove paired-device credential (retain drafts)</string>
+    <string name="nodus_sync">Sync now / retry</string>
+    <string name="nodus_retained">Review retained connection scopes</string>
+    <string name="nodus_review_warning">Review this retained local scope? Current synchronization will disconnect. This does not restore credentials or activate anything. Reuse requires separate credential validation, an equal authenticated server realm ID, and explicit same-account confirmation.</string>
+    <string name="nodus_conflicts">Refresh conflicts and evidence</string>
+    <string name="nodus_status">Pending: %1$d · Conflicted: %2$d · Blocked: %3$d · Unknown: %4$d</string>
+    <string name="nodus_status_detail">%1$s\n%2$s\n%3$s</string>
+    <string name="nodus_synchronized">Last synchronization complete</string>
+    <string name="nodus_not_synchronized">Not synchronized — pending work, blocked data, or reconnection required</string>
+    <string name="nodus_busy">Working…</string>
+    <string name="nodus_paired">Device paired securely. Synchronization remains inactive until you confirm activation.</string>
+    <string name="nodus_pairing_cancelled">Pending pairing cancelled. If its earlier outcome was unknown, revoke any unexpected device from Nodus web before creating another code.</string>
+    <string name="nodus_pairing_invalid">The pairing code is invalid, expired, or belongs to an earlier server realm. Create a new code in Nodus web.</string>
+    <string name="nodus_pairing_reused">This pairing code was already used with different device evidence. Review paired devices in Nodus web and create a new code.</string>
+    <string name="nodus_pairing_throttled">Too many pairing attempts. Wait before retrying the exact saved request.</string>
+    <string name="nodus_pairing_recovery">The server is in recovery mode and cannot pair devices yet. Retry the exact saved request after recovery is complete.</string>
+    <string name="nodus_pairing_retry_saved">A different pairing request is already retained. Retry it with the code field empty, or explicitly cancel it first.</string>
+    <string name="nodus_action_failed">Nodus could not complete this action. Check the HTTPS root, pairing code, server realm, connectivity and retained status. An unknown pairing request is retained for exact retry. No drafts were discarded.</string>
+    <string name="nodus_pair_warning">Pair this device with the displayed Nodus server? The code is single-use. The resulting credential is stored privately and never displayed. Synchronization requires separate activation.</string>
+    <string name="nodus_cancel_pairing_warning">Cancel this retained pairing request? Do this only if the web code is known to be invalid. If the network outcome was unknown, first check and revoke unexpected devices in Nodus web.</string>
+    <string name="nodus_epoch_warning">Remove the paired-device credential? This changes the credential epoch. Old pending and unknown operations remain retained for manual review and will not be replayed with a later credential.</string>
+    <string name="nodus_activate_warning">Activate full synchronization with this server? All shared notes, lists, tags, notebooks, reminders and attachment bytes participate. Local-only notes remain private. Unsupported or inaccessible data remains blocked and is never silently discarded.</string>
+    <string name="nodus_disconnect_warning">Stop subsequent synchronization requests? In-flight outcomes and all local drafts remain retained. Disconnecting does not delete server data.</string>
+    <string name="nodus_apply">Apply proposal</string>
+    <string name="nodus_discard">Discard proposal</string>
+    <string name="nodus_apply_warning">Apply this retained proposal against a freshly read server revision? A concurrent server change may conflict again. The local draft is retained until authoritative projection is safe.</string>
+    <string name="nodus_discard_warning">Discard this server proposal? This does not delete or acknowledge the local draft; it remains blocked for explicit review.</string>
+    <string name="nodus_no_conflicts">No retained conflicts found</string>
+</resources>

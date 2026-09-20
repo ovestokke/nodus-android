@@ -16,6 +16,7 @@ class SyncWorker(
     private val noteRepository: NoteRepository,
     context: Context,
     params: WorkerParameters,
+    private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusController? = null,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -23,6 +24,7 @@ class SyncWorker(
         if (preferenceRepository.get<BackgroundSync>().first() == BackgroundSync.DISABLED)
             return@withContext Result.failure()
 
+        nodus?.workerIfSelected()?.let { return@withContext it }
         when (noteRepository.syncNotes()) {
             Success -> Result.success()
             else -> Result.failure()

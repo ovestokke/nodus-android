@@ -151,7 +151,9 @@ class BackupManager(
             reminderManager.schedule(
                 reminderId = reminderId,
                 noteId = noteId,
-                dateTime = reminder.date
+                dateTime = reminder.date,
+                name = reminder.name,
+                fingerprint = reminder.alarmFingerprint
             )
         }
     }

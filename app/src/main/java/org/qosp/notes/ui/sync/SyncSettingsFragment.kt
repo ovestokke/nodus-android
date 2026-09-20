@@ -8,6 +8,8 @@ import android.view.View
 import androidx.appcompat.widget.Toolbar
 import androidx.core.net.toUri
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.qosp.notes.R
 import org.qosp.notes.data.sync.fs.toFriendlyString
 import org.qosp.notes.databinding.FragmentSyncSettingsBinding
@@ -27,6 +29,8 @@ import org.qosp.notes.ui.utils.viewBinding
 class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
     private val binding by viewBinding(FragmentSyncSettingsBinding::bind)
     private val model: SettingsViewModel by activityViewModel()
+    private val nodus: NodusSettingsViewModel by viewModel()
+    private var credentialVersion=0
 
     override val hasMenu = false
     override val toolbar: Toolbar
@@ -77,6 +81,7 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
         setupTrustCertificatesListener()
 
         setupLocalLocationListener()
+        setupNodus()
     }
 
     private fun View.show(visible: Boolean) = if (visible) visibility = View.VISIBLE else visibility = View.GONE
@@ -86,12 +91,13 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
             appPreferences = prefs
 
             // Update visibility of layouts based on cloud service
-            binding.layoutGenericSettings.show(prefs.cloudService == CloudService.NEXTCLOUD)
+            binding.layoutNodusSettings.root.show(prefs.cloudService == CloudService.NODUS)
+            binding.layoutGenericSettings.show(prefs.cloudService in setOf(CloudService.NEXTCLOUD,CloudService.NODUS))
             binding.layoutNextcloudSettings.show(prefs.cloudService == CloudService.NEXTCLOUD)
             binding.layoutStorageSettings.show(prefs.cloudService == CloudService.FILE_STORAGE)
-            binding.settingSyncMode.show(prefs.cloudService == CloudService.NEXTCLOUD)
-            binding.settingBackgroundSync.show(prefs.cloudService == CloudService.NEXTCLOUD)
-            binding.settingNotesSyncableByDefault.show(prefs.cloudService == CloudService.NEXTCLOUD)
+            binding.settingSyncMode.show(prefs.cloudService in setOf(CloudService.NEXTCLOUD,CloudService.NODUS))
+            binding.settingBackgroundSync.show(prefs.cloudService in setOf(CloudService.NEXTCLOUD,CloudService.NODUS))
+            binding.settingNotesSyncableByDefault.show(prefs.cloudService in setOf(CloudService.NEXTCLOUD,CloudService.NODUS))
             binding.settingTrustSelfSignedCertificate.show(prefs.cloudService == CloudService.NEXTCLOUD)
 
             binding.settingSyncProvider.subText = getString(prefs.cloudService.nameResource)
@@ -122,6 +128,67 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
             val appName = if (u.isNotBlank()) context?.let { uri.toFriendlyString(it) } else null
             binding.settingStorageLocation.subText = appName ?: getString(R.string.preferences_file_storage_select)
         }
+    }
+
+    private fun confirm(message:Int, action:()->Unit) {
+        MaterialAlertDialogBuilder(requireContext()).setMessage(message)
+            .setNegativeButton(android.R.string.cancel,null).setPositiveButton(android.R.string.ok){_,_->action()}.show()
+    }
+    private fun setupNodus() = with(binding.layoutNodusSettings) {
+        arguments?.getString("pairingOrigin")?.let { pairedOrigin ->
+            origin.setText(pairedOrigin)
+            pairingCode.setText(arguments?.getString("pairingCode").orEmpty())
+            model.setPreference(CloudService.NODUS)
+        }
+        retained.setOnClickListener { nodus.connections() }
+        pair.setOnClickListener { confirm(R.string.nodus_pair_warning){nodus.pair(origin.text.toString(),pairingCode.text.toString())} }
+        cancelPairing.setOnClickListener { confirm(R.string.nodus_cancel_pairing_warning){nodus.cancelPairing()} }
+        activate.setOnClickListener { confirm(R.string.nodus_activate_warning){nodus.activate()} }
+        disconnect.setOnClickListener { confirm(R.string.nodus_disconnect_warning){nodus.disconnect(false)} }
+        clear.setOnClickListener { confirm(R.string.nodus_epoch_warning){nodus.disconnect(true)} }
+        sync.setOnClickListener { nodus.sync() }
+        conflicts.setOnClickListener { nodus.conflicts() }
+        nodus.state.collect(viewLifecycleOwner) { state ->
+            val current=state.status
+            if(origin.text.isEmpty()) origin.setText(current.origin.ifEmpty { "https://nodus.vstokke.com" })
+            if(state.credentialVersion!=credentialVersion){pairingCode.setText("");origin.setText(current.origin.ifEmpty { origin.text });credentialVersion=state.credentialVersion}
+            pairingStatus.setText(when {
+                current.pairingPending -> R.string.nodus_pairing_pending
+                current.tokenSaved -> R.string.nodus_credential_saved
+                else -> R.string.nodus_pairing_ready
+            })
+            cancelPairing.show(current.pairingCancelable)
+            status.text=getString(R.string.nodus_status_detail,
+                getString(if(current.synchronized)R.string.nodus_synchronized else R.string.nodus_not_synchronized),
+                getString(R.string.nodus_status,current.pending,current.conflicted,current.blocked,current.unknown),
+                current.issues.joinToString(separator="\n"))
+            message.text=if(state.busy)getString(R.string.nodus_busy) else state.message?.let(::getString).orEmpty()
+            listOf(pair,cancelPairing,activate,disconnect,clear,sync,conflicts,retained).forEach{it.isEnabled = !state.busy}
+            activate.isEnabled = !state.busy && current.connectionId!=null && current.tokenSaved && !current.active
+            sync.isEnabled = !state.busy && current.active
+            conflicts.isEnabled = !state.busy && current.connectionId!=null
+            if(state.showConnections) {
+                nodus.consumeConnections()
+                MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.nodus_retained)
+                    .setItems(state.connections.map { "${it.origin} (${it.id}; ${it.realmId ?: "unverified"})" }.toTypedArray()){_,index ->
+                        confirm(R.string.nodus_review_warning){nodus.reviewConnection(state.connections[index].id)}
+                    }.setNegativeButton(android.R.string.cancel,null).show()
+            }
+            if(state.showConflicts) {
+                nodus.consumeConflictList()
+                if(state.conflicts.isEmpty()) MaterialAlertDialogBuilder(requireContext()).setMessage(R.string.nodus_no_conflicts).setPositiveButton(android.R.string.ok,null).show()
+                else MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.nodus_conflicts)
+                    .setItems(state.conflicts.map{ "${it.id} (${it.state})" }.toTypedArray()){_,index->
+                        val conflict=state.conflicts[index]
+                        val dialog=MaterialAlertDialogBuilder(requireContext()).setTitle(conflict.id).setMessage(conflict.evidence).setNeutralButton(android.R.string.cancel,null)
+                        if(conflict.state=="pending" && current.active) dialog
+                            .setPositiveButton(R.string.nodus_apply){_,_->confirm(R.string.nodus_apply_warning){nodus.resolve(conflict.id,true)}}
+                            .setNegativeButton(R.string.nodus_discard){_,_->confirm(R.string.nodus_discard_warning){nodus.resolve(conflict.id,false)}}
+                        dialog.show()
+                    }.show()
+            }
+        }
+        nodus.load()
     }
 
     private fun setupLocalLocationListener() = binding.settingStorageLocation.setOnClickListener {

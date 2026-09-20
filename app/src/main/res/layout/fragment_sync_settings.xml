@@ -29,6 +29,8 @@
                     app:iconSrc="@drawable/ic_sync_settings">
                 </org.qosp.notes.ui.utils.views.PreferenceView>
 
+                <include android:id="@+id/layout_nodus_settings" layout="@layout/layout_nodus_settings" android:visibility="gone" />
+
                 <LinearLayout
                     android:id="@+id/layout_generic_settings"
                     android:layout_width="match_parent"

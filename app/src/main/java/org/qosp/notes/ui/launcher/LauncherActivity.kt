@@ -57,7 +57,10 @@ class LauncherActivity : ComponentActivity() {
     }
 
     private fun proceedToMainActivity() {
-        val intent = Intent(this, MainActivity::class.java)
+        val intent = Intent(this, MainActivity::class.java).apply {
+            action=this@LauncherActivity.intent.action
+            data=this@LauncherActivity.intent.data
+        }
         startActivity(intent)
         finish() // Finish LauncherActivity after starting MainActivity
     }

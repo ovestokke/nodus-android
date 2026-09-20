@@ -17,6 +17,21 @@ import org.qosp.notes.data.model.NoteTagJoin
 import org.qosp.notes.data.model.Notebook
 import org.qosp.notes.data.model.Reminder
 import org.qosp.notes.data.model.Tag
+import org.qosp.notes.data.sync.nodus.storage.NodusIntegrationState
+import org.qosp.notes.data.sync.nodus.storage.NodusLocalCapture
+import org.qosp.notes.data.sync.nodus.storage.NodusAttachmentTransfer
+import org.qosp.notes.data.sync.nodus.storage.NodusBlobTransfer
+import org.qosp.notes.data.sync.nodus.storage.NodusConflictRecord
+import org.qosp.notes.data.sync.nodus.storage.NodusConnection
+import org.qosp.notes.data.sync.nodus.storage.NodusCursor
+import org.qosp.notes.data.sync.nodus.storage.NodusDao
+import org.qosp.notes.data.sync.nodus.storage.NodusEvidence
+import org.qosp.notes.data.sync.nodus.storage.NodusIntent
+import org.qosp.notes.data.sync.nodus.storage.NodusMapping
+import org.qosp.notes.data.sync.nodus.storage.NodusMigration5To6
+import org.qosp.notes.data.sync.nodus.storage.NodusOutbox
+import org.qosp.notes.data.sync.nodus.storage.NodusSnapshot
+import org.qosp.notes.data.sync.nodus.storage.NodusTracking
 
 @Database(
     entities = [
@@ -25,13 +40,29 @@ import org.qosp.notes.data.model.Tag
         Notebook::class,
         Tag::class,
         Reminder::class,
+        org.qosp.notes.data.model.ReminderAlarmState::class,
         IdMapping::class,
+        NodusIntegrationState::class,
+        NodusLocalCapture::class,
+        NodusConnection::class,
+        NodusMapping::class,
+        NodusSnapshot::class,
+        NodusTracking::class,
+        NodusIntent::class,
+        NodusOutbox::class,
+        NodusCursor::class,
+        NodusEvidence::class,
+        NodusConflictRecord::class,
+        NodusBlobTransfer::class,
+        NodusAttachmentTransfer::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(DatabaseConverters::class)
 abstract class AppDatabase : RoomDatabase() {
+
+    abstract val nodusDao: NodusDao
 
     abstract val noteDao: NoteDao
     abstract val notebookDao: NotebookDao
@@ -42,6 +73,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val DB_NAME = "notes_database"
+
+        val MIGRATION_5_6: Migration = NodusMigration5To6
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {

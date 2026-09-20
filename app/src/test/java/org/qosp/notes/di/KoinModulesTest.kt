@@ -40,6 +40,16 @@ class KoinModulesTest : KoinTest {
                 SyncScope::class,
             ),
             injections = injectedParameters(
+                definition<org.qosp.notes.data.sync.nodus.NodusConfigurationStore>(android.util.AtomicFile::class, Function1::class),
+                definition<org.qosp.notes.data.sync.nodus.integration.NodusAppBridge>(Function0::class,Function1::class),
+                definition<org.qosp.notes.data.sync.nodus.engine.NodusByteStore>(java.io.File::class,Long::class,Function1::class,Function2::class),
+                definition<org.qosp.notes.data.sync.nodus.integration.NodusController>(Function0::class,Function1::class,org.qosp.notes.data.sync.nodus.engine.NodusEngineTransport::class),
+                definition<org.qosp.notes.components.workers.NodusSyncWorker>(Context::class,WorkerParameters::class),
+                definition<org.qosp.notes.data.sync.nodus.integration.NodusSyncService>(Function0::class, Function1::class,
+                    org.qosp.notes.data.sync.nodus.integration.NodusReminderReconciliation::class,
+                    org.qosp.notes.data.sync.nodus.engine.NodusByteStore::class,
+                    org.qosp.notes.data.sync.nodus.engine.NodusEngineTransport::class,
+                    org.qosp.notes.data.sync.nodus.engine.NodusBinaryTransport::class),
                 definition<org.qosp.notes.ui.launcher.LauncherViewModel>(
                     Application::class
                 ),

@@ -35,7 +35,7 @@ class BackendProvider(
         StorageConfig.storageLocation(preferenceRepository)
     ) { service, nextcloudConfig, storageConfig ->
         when (service) {
-            CloudService.DISABLED -> null
+            CloudService.DISABLED, CloudService.NODUS -> null
             CloudService.NEXTCLOUD -> nextcloudConfig?.let { NextcloudBackend(nextcloudApiProvider, it) }
             CloudService.FILE_STORAGE -> storageConfig?.let { StorageBackend(context, it) }
         }

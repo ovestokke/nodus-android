@@ -18,6 +18,7 @@ class BinCleaningWorker(
     private val preferenceRepository: PreferenceRepository,
     private val noteRepository: NoteRepository,
     private val mediaStorageManager: MediaStorageManager,
+    private val nodus: org.qosp.notes.data.sync.nodus.integration.NodusAppBridge? = null,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -26,6 +27,7 @@ class BinCleaningWorker(
         val now = Instant.now()
         val toBeDeleted = noteRepository.getDeleted().first()
             .filter { note ->
+                if (nodus?.cleanupEligible(note.id) == false) return@filter false
                 val deletionDate = note.deletionDate?.let { Instant.ofEpochSecond(it) } ?: return@filter false
                 now.isAfter(deletionDate.plusSeconds(deletionTime))
             }

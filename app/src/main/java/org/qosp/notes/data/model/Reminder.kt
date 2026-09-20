@@ -29,6 +29,8 @@ data class Reminder(
     val date: Long,
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
+    @ColumnInfo(defaultValue = "''")
+    val alarmFingerprint:String = "",
 ) : Parcelable {
 
     fun hasExpired(): Boolean {

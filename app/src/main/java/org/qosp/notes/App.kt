@@ -150,6 +150,8 @@ class App : Application(), ImageLoaderFactory {
 
     private fun enqueueWorkers() {
         val workManager = WorkManager.getInstance(this)
+        workManager.enqueueUniqueWork("REMINDER_RECONCILE",androidx.work.ExistingWorkPolicy.KEEP,
+            androidx.work.OneTimeWorkRequestBuilder<org.qosp.notes.components.workers.ReminderReconcileWorker>().build())
 
         val periodicRequests = listOf(
             "BIN_CLEAN" to PeriodicWorkRequestBuilder<BinCleaningWorker>(5, TimeUnit.HOURS)

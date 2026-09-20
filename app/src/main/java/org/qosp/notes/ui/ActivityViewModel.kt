@@ -65,6 +65,8 @@ class ActivityViewModel(
     var notesToBackup: Set<Note>? = null
     var tempPhotoUri: Uri? = null
 
+    suspend fun isNodusSelected() = preferenceRepository.get<org.qosp.notes.preferences.CloudService>().first() == org.qosp.notes.preferences.CloudService.NODUS
+
     fun syncAsync(): Deferred<BaseResult> = syncScope.async { noteRepository.syncNotes() }
 
     fun discardEmptyNotesAsync() = viewModelScope.async(Dispatchers.IO) { noteRepository.discardEmptyNotes() }
@@ -157,7 +159,7 @@ class ActivityViewModel(
             .getByNoteId(newId)
             .first()
             .forEach {
-                reminderManager.schedule(it.id, it.date, it.noteId)
+                reminderManager.schedule(it.id, it.date, it.noteId,it.name,it.alarmFingerprint)
             }
     }
 

@@ -4,6 +4,7 @@ import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import org.qosp.notes.ui.sync.NodusSettingsViewModel
 import org.qosp.notes.ui.ActivityViewModel
 import org.qosp.notes.ui.archive.ArchiveViewModel
 import org.qosp.notes.ui.attachments.dialog.AttachmentDialogViewModel
@@ -29,6 +30,7 @@ object UIModule {
         viewModelOf(::TagDialogViewModel)
         viewModelOf(::NextcloudViewModel)
         viewModelOf(::SettingsViewModel)
+        viewModelOf(::NodusSettingsViewModel)
         viewModelOf(::SearchViewModel)
         viewModelOf(::EditReminderViewModel)
         viewModelOf(::ManageNotebooksViewModel)
