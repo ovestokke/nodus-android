@@ -4,7 +4,13 @@ Nodus Android is the planned Android client for Nodus, a single-user notes and c
 
 ## Current status
 
-Nodus Android is under active development. The current working tree includes Nodus Server synchronization against the v2 contract and uses the Android application ID `com.vstokke.nodus`. Device enrollment uses a short-lived, single-use code or `nodus://pair` QR link created by the authenticated Nodus web app; Android never asks the user to paste a bearer token. No production release or store listing exists yet. The note editor, checklist, Markdown, storage, and much of the Android UI remain inherited from Quillpad.
+Nodus Android is under active development. It includes Nodus Server synchronization against the v2 contract and uses the Android application ID `com.vstokke.nodus`. Device enrollment uses a short-lived, single-use code or `nodus://pair` QR link created by the authenticated Nodus web app; Android never asks the user to paste a bearer token. Signed APK releases are published through GitHub; no app-store listing exists yet. The note editor, checklist, Markdown, storage, and much of the Android UI remain inherited from Quillpad.
+
+## Install with Obtainium
+
+Add `https://github.com/ovestokke/nodus-android` as an app source in [Obtainium](https://github.com/ImranR98/Obtainium). Obtainium will track the latest GitHub release and install the attached `nodus-<version>.apk`.
+
+Release APKs use the Nodus release signing key. A locally installed debug build uses a different signature and must be uninstalled before the first release installation; later Obtainium updates install normally.
 
 ## Lineage and upstream
 

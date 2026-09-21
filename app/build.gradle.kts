@@ -20,8 +20,8 @@ android {
         applicationId = "com.vstokke.nodus"
         minSdk = 24
         targetSdk = 37
-        versionCode = 55
-        versionName = "1.5.13"
+        versionCode = providers.gradleProperty("nodusVersionCode").orNull?.toInt() ?: 56
+        versionName = providers.gradleProperty("nodusVersionName").orNull ?: "1.5.15"
 
         testInstrumentationRunner = "org.qosp.notes.TestRunner"
 
