@@ -338,7 +338,7 @@ class NodusEngineTest {
         fake.sendHandler={ FakeNodusTransport.clash(revision="9000") }
         engine.drain()
         val operation=fake.sent.single()
-        val proposal=V2Proposal("v2",operation.method,operation.path,NodusJson.decode(V2EditNote.serializer(),wireString(operation.body!!)),wireString(operation.body))
+        val proposal=V2Proposal.Native("v2",operation.method,operation.path,NodusJson.decode(V2EditNote.serializer(),wireString(operation.body!!)),wireString(operation.body))
         val conflict=V2Conflict("clash",ConflictState.PENDING,"","revision_mismatch",proposal,remote("3").copy(title="remote"))
         fake.conflictPages.add(V2Conflicts(listOf(conflict),"9000","9000",false))
         engine.discoverConflicts()
@@ -384,6 +384,27 @@ class NodusEngineTest {
         assertArrayEquals(original.body,dao.outbox("c",original.operationId)!!.body)
     }
 
+    @Test fun drainQuarantinesRetainedHistoricalApplyWithoutSendingIt(): Unit = runBlocking {
+        bootstrap()
+        val input=V2EditNote(config.deviceId,"old-apply-source","1",title=WireField.Present("proposal"))
+        val proposal=V2Proposal.Native("v2","PATCH","/api/v2/notes/n",input,NodusJson.encode(V2EditNote.serializer(),input))
+        fake.conflictPages.add(V2Conflicts(listOf(V2Conflict("queued-history",ConflictState.PENDING,"","revision_mismatch",proposal,remote())),"2","2",false))
+        val coordinator=engine()
+        coordinator.discoverConflicts()
+        val apply=coordinator.applyConflict(root().mappingId,"queued-history","2")
+        val old="""{"id":"queued-history","state":"pending","parent":"","reason":"retained","operation":{"apiVersion":"v1","method":"PATCH","path":"/api/v1/notes/n","input":{"deviceId":"d","requestId":"r","expectedRevision":"1"},"submittedBody":"exact"},"snapshot":null}""".toByteArray()
+        db.openHelper.writableDatabase.execSQL(
+            "UPDATE nodus_conflicts SET body=? WHERE connectionId=? AND conflictId=?",
+            arrayOf(old,"c","queued-history")
+        )
+        val drained=coordinator.drain()
+        assertTrue(fake.sent.isEmpty())
+        assertEquals(NodusOutboxState.RETIRED,dao.outbox("c",apply)!!.state)
+        assertEquals("manual:historical_operation",dao.latestEvidence("c",apply)!!.errorCode)
+        assertTrue(drained.blocked.any{it.endsWith(":historical_operation")})
+        assertArrayEquals(old,dao.conflict("c","queued-history")!!.body)
+    }
+
     @Test fun organizationResourceInUseConflictKeepsMembershipAndSeparateConflictStream(): Unit = runBlocking {
         val time="2000-01-01T00:00:00Z"
         val tag=V2Tag("t","label","1",time,time,false)
@@ -394,7 +415,7 @@ class NodusEngineTest {
         fake.sendHandler={ NodusHttpResult(409,"""{"error":"resource_in_use","code":"durable_conflict","conflictId":"in-use","revision":"3"}""".toByteArray()) }
         engine.drain()
         val op=fake.sent.single()
-        val proposal=V2Proposal("v2","DELETE",op.path,NodusJson.decode(V2OrganizationDelete.serializer(),wireString(op.body!!)),wireString(op.body))
+        val proposal=V2Proposal.Native("v2","DELETE",op.path,NodusJson.decode(V2OrganizationDelete.serializer(),wireString(op.body!!)),wireString(op.body))
         fake.conflictPages.add(V2Conflicts(listOf(V2Conflict("in-use",ConflictState.PENDING,"","resource_in_use",proposal,tag)),"3","3",false))
         engine.discoverConflicts()
         assertEquals("resource_in_use",NodusJson.decode(V2Conflict.serializer(),wireString(dao.conflict("c","in-use")!!.body)).reason)

@@ -97,26 +97,32 @@ internal class NodusPlanning(private val db: AppDatabase, private val connection
         id
     }
 
-    suspend fun enqueueResolution(mappingId: String, conflictId: String, expectedRevision: String?): String = db.withTransaction {
+    suspend fun enqueueResolution(mappingId: String, conflictId: String, expectedRevision: String?, historical: Boolean = false): String = db.withTransaction {
         val conflict = requireNotNull(dao.conflict(connectionId, conflictId))
-        val evidence = NodusJson.decode(V2Conflict.serializer(), wireString(conflict.body))
-        require(evidence.state == ConflictState.PENDING)
+        require(conflict.state == "pending")
         val mapping = requireNotNull(dao.mapping(connectionId, mappingId))
-        val target = resourceTarget(mapping)
-        val parts = evidence.operation.path.split('/')
-        require(parts[3] == target.first.name.lowercase() + "s" && parts[4] == target.second)
-        if (mapping.parentId.isNotEmpty()) {
-            val collection = when (mapping.resourceType) {
-                NodusResourceType.ITEM -> "items"
-                NodusResourceType.REMINDER -> "reminders"
-                NodusResourceType.ATTACHMENT -> "attachments"
-                else -> error("Invalid child mapping")
+        if (historical) {
+            require(expectedRevision == null && isStoredHistoricalConflict(conflict.body))
+        } else {
+            val evidence = NodusJson.decode(V2Conflict.serializer(), wireString(conflict.body))
+            require(evidence.state == ConflictState.PENDING)
+            val operation = evidence.operation as? V2Proposal.Native ?: error("historical_operation")
+            val target = resourceTarget(mapping)
+            val parts = operation.path.split('/')
+            require(parts[3] == target.first.name.lowercase() + "s" && parts[4] == target.second)
+            if (mapping.parentId.isNotEmpty()) {
+                val collection = when (mapping.resourceType) {
+                    NodusResourceType.ITEM -> "items"
+                    NodusResourceType.REMINDER -> "reminders"
+                    NodusResourceType.ATTACHMENT -> "attachments"
+                    else -> error("Invalid child mapping")
+                }
+                require(parts.size >= 6 && parts[5] == collection)
+                if (parts.size == 6) {
+                    val fields = NodusJson.format.parseToJsonElement(NodusJson.encode(V2Proposal.serializer(), operation)).jsonObject.getValue("input").jsonObject
+                    require(fields[if (collection == "items") "itemId" else "id"] == JsonPrimitive(mapping.wireId))
+                } else require(parts[6] == mapping.wireId)
             }
-            require(parts.size >= 6 && parts[5] == collection)
-            if (parts.size == 6) {
-                val fields = NodusJson.format.parseToJsonElement(NodusJson.encode(V2Proposal.serializer(), evidence.operation)).jsonObject.getValue("input").jsonObject
-                require(fields[if (collection == "items") "itemId" else "id"] == JsonPrimitive(mapping.wireId))
-            } else require(parts[6] == mapping.wireId)
         }
         val connection = requireNotNull(dao.connection(connectionId))
         val request = newNodusId()

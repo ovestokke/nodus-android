@@ -10,6 +10,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.JsonNull
 import org.junit.*
 import org.junit.Assert.*
 import org.junit.runner.RunWith
@@ -219,7 +220,7 @@ class NodusControllerTest {
         val root=dao.mappingByLocalRow(id,NodusResourceType.NOTE,localId)!!
         val input=V2EditNote(config.deviceId,"original-request","1",title=WireField.Present("proposal"))
         val exact=NodusJson.encode(V2EditNote.serializer(),input)
-        val proposal=V2Proposal("v2","PATCH","/api/v2/notes/${root.wireId}",input,exact)
+        val proposal=V2Proposal.Native("v2","PATCH","/api/v2/notes/${root.wireId}",input,exact)
         val old=NodusJson.decode(V2Note.serializer(),NodusFixtures.note).copy(id=root.wireId,revision="20")
         freshNote=old.copy(revision="41")
         conflict=V2Conflict("clash",ConflictState.PENDING,"","revision_mismatch",proposal,old)
@@ -250,7 +251,7 @@ class NodusControllerTest {
         val root=dao.mappingByLocalRow(id,NodusResourceType.NOTE,localId)!!
         val item=dao.childMappings(id,root.wireId).single { it.resourceType==NodusResourceType.ITEM }
         val input=V2Toggle(config.deviceId,"original-item-request","5",true)
-        val proposal=V2Proposal("v2","PATCH","/api/v2/notes/${root.wireId}/items/${item.wireId}/checked",input,NodusJson.encode(V2Toggle.serializer(),input))
+        val proposal=V2Proposal.Native("v2","PATCH","/api/v2/notes/${root.wireId}/items/${item.wireId}/checked",input,NodusJson.encode(V2Toggle.serializer(),input))
         val current=NodusJson.decode(V2Note.serializer(),NodusFixtures.note).copy(id=root.wireId,kind=NoteKind.CHECKLIST,revision="41",state=NoteState.LIVE,
             trashedAt=null,sourceTrashedAt=null,items=listOf(Item(item.wireId,"task",false,0,"17",false)),attachments=emptyList(),reminders=emptyList(),primaryReminderId=null)
         freshNote=current
@@ -265,7 +266,7 @@ class NodusControllerTest {
         val id=controller.status().connectionId!!
         val config=credentials.configuration()!!
         val input=V2CreateNote(config.deviceId,"foreign-request",NoteKind.TEXT)
-        val proposal=V2Proposal("v2","PUT","/api/v2/notes/foreign-note",input,NodusJson.encode(V2CreateNote.serializer(),input))
+        val proposal=V2Proposal.Native("v2","PUT","/api/v2/notes/foreign-note",input,NodusJson.encode(V2CreateNote.serializer(),input))
         conflict=V2Conflict("foreign-clash",ConflictState.PENDING,"","deleted_dependency",proposal,null)
         controller.refreshConflicts()
         assertNull(dao.mappingByWire(id,NodusResourceType.NOTE,"foreign-note"))
@@ -276,12 +277,85 @@ class NodusControllerTest {
         assertFalse(gets.contains("/api/v2/notes/foreign-note"))
     }
 
+    @Test fun canonicalHistoricalConflictIsReviewableAndDiscardableButApplyIsRejectedLocally():Unit=runBlocking {
+        configure();controller.activate(true)
+        val id=controller.status().connectionId!!
+        val raw="{not executable legacy json"
+        conflict=V2Conflict("historical-clash",ConflictState.PENDING,"","retained",
+            V2Proposal.Historical("v1",true,raw),null,JsonNull)
+        val view=controller.refreshConflicts().single()
+        assertTrue(view.historical)
+        assertTrue(view.evidence.contains(raw))
+        val reads=gets.size
+        assertThrows(IllegalStateException::class.java){runBlocking{controller.resolve("historical-clash",true,true)}}
+        assertEquals(reads,gets.size)
+        assertTrue(dao.operations(id).none{it.path.contains("historical-clash")})
+        controller.resolve("historical-clash",false,true)
+        val discard=dao.operations(id).single { it.path=="/api/v2/conflicts/historical-clash/discard" }
+        assertEquals(credentials.configuration()!!.deviceId,NodusJson.decode(V2Discard.serializer(),wireString(discard.body!!)).deviceId)
+        assertEquals(raw,((NodusJson.decode(V2Conflict.serializer(),wireString(dao.conflict(id,"historical-clash")!!.body)).operation) as V2Proposal.Historical).rawOperation)
+        assertFalse(gets.any{it.startsWith("/api/v2/notes/") || it.startsWith("/api/v2/tags/") || it.startsWith("/api/v2/notebooks/") || it.startsWith("/api/v2/blobs/")})
+    }
+
+    @Test fun retainedOldShapeHistoricalRowKeepsExactBytesAndCanOnlyBeDiscarded():Unit=runBlocking {
+        configure();controller.activate(true)
+        val id=controller.status().connectionId!!
+        val old="""{"id":"old-history","state":"pending","parent":"","reason":"retained","operation":{"apiVersion":"v1","method":"PATCH","path":"/api/v1/notes/n","input":{"deviceId":"d","requestId":"r","expectedRevision":"1"},"submittedBody":"exact"},"snapshot":null}""".toByteArray()
+        db.openHelper.writableDatabase.execSQL(
+            "INSERT INTO nodus_conflicts(connectionId,conflictId,state,parentId,body) VALUES(?,?,?,?,?)",
+            arrayOf(id,"old-history","pending","",old)
+        )
+        assertTrue(controller.conflictList().single().historical)
+        conflict=V2Conflict("old-history",ConflictState.PENDING,"","retained",
+            V2Proposal.Historical("v1",true,"canonical replacement"),null,JsonNull)
+        controller.refreshConflicts()
+        assertArrayEquals(old,dao.conflict(id,"old-history")!!.body)
+        assertThrows(IllegalStateException::class.java){runBlocking{controller.resolve("old-history",true,true)}}
+        assertArrayEquals(old,dao.conflict(id,"old-history")!!.body)
+        controller.resolve("old-history",false,true)
+        assertTrue(dao.operations(id).any{it.path=="/api/v2/conflicts/old-history/discard"})
+        assertArrayEquals(old,dao.conflict(id,"old-history")!!.body)
+        conflict=V2Conflict("old-history",ConflictState.DISCARDED,"","retained",
+            V2Proposal.Historical("v1",true,"canonical replacement"),null,JsonNull)
+        controller.refreshConflicts()
+        assertEquals("discarded",dao.conflict(id,"old-history")!!.state)
+        assertArrayEquals(old,dao.conflict(id,"old-history")!!.body)
+    }
+
+    @Test fun retainedQueuedHistoricalApplyIsQuarantinedAndDoesNotBlockDiscard():Unit=runBlocking {
+        configure();controller.activate(true)
+        val id=controller.status().connectionId!!
+        val config=credentials.configuration()!!
+        val mapping=NodusMapping(id,newNodusId(),NodusResourceType.NOTE,"","queued-note",newNodusId(),null)
+        dao.addMappings(id,listOf(mapping))
+        val input=V2EditNote(config.deviceId,"old-apply-source","1",title=WireField.Present("proposal"))
+        val proposal=V2Proposal.Native("v2","PATCH","/api/v2/notes/queued-note",input,NodusJson.encode(V2EditNote.serializer(),input))
+        val native=V2Conflict("queued-history",ConflictState.PENDING,"","revision_mismatch",proposal,null)
+        db.openHelper.writableDatabase.execSQL(
+            "INSERT INTO nodus_conflicts(connectionId,conflictId,state,parentId,body) VALUES(?,?,?,?,?)",
+            arrayOf(id,"queued-history","pending","",NodusJson.encode(V2Conflict.serializer(),native).toByteArray())
+        )
+        val apply=NodusCoordinator(db,id,{credentials.configuration()},http,bytes).applyConflict(mapping.mappingId,"queued-history","2")
+        assertEquals(NodusOutboxState.PREPARED,dao.outbox(id,apply)!!.state)
+        val old="""{"id":"queued-history","state":"pending","parent":"","reason":"retained","operation":{"apiVersion":"v1","method":"PATCH","path":"/api/v1/notes/queued-note","input":{"deviceId":"d","requestId":"r","expectedRevision":"1"},"submittedBody":"exact"},"snapshot":null}""".toByteArray()
+        db.openHelper.writableDatabase.execSQL(
+            "UPDATE nodus_conflicts SET body=? WHERE connectionId=? AND conflictId=?",
+            arrayOf(old,id,"queued-history")
+        )
+        controller.resolve("queued-history",false,true)
+        assertEquals(NodusOutboxState.RETIRED,dao.outbox(id,apply)!!.state)
+        assertEquals("manual:historical_operation",dao.latestEvidence(id,apply)!!.errorCode)
+        assertTrue(dao.operations(id).any{it.path=="/api/v2/conflicts/queued-history/discard" && it.state==NodusOutboxState.PREPARED})
+        assertTrue(sent.none{it.path=="/api/v2/conflicts/queued-history/apply"})
+        assertArrayEquals(old,dao.conflict(id,"queued-history")!!.body)
+    }
+
     @Test fun nullSnapshotV2NoteCreateCanApplyWithAbsentTargetSentinelAfterDependencyRepair():Unit=runBlocking {
         configure();controller.activate(true)
         val id=controller.status().connectionId!!
         val config=credentials.configuration()!!
         val input=V2CreateNote(config.deviceId,"dependency-repair",NoteKind.TEXT,tagIds=WireField.Present(listOf("repaired-tag")))
-        val proposal=V2Proposal("v2","PUT","/api/v2/notes/repaired-note",input,NodusJson.encode(V2CreateNote.serializer(),input))
+        val proposal=V2Proposal.Native("v2","PUT","/api/v2/notes/repaired-note",input,NodusJson.encode(V2CreateNote.serializer(),input))
         conflict=V2Conflict("repairable-create",ConflictState.PENDING,"","dependency_deleted",proposal,null)
         noteResponseStatus=404
         controller.refreshConflicts();controller.resolve("repairable-create",true,true)

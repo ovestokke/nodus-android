@@ -182,9 +182,10 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
                     .setItems(state.conflicts.map{ "${it.id} (${it.state})" }.toTypedArray()){_,index->
                         val conflict=state.conflicts[index]
                         val dialog=MaterialAlertDialogBuilder(requireContext()).setTitle(conflict.id).setMessage(conflict.evidence).setNeutralButton(android.R.string.cancel,null)
-                        if(conflict.state=="pending" && current.active) dialog
-                            .setPositiveButton(R.string.nodus_apply){_,_->confirm(R.string.nodus_apply_warning){nodus.resolve(conflict.id,true)}}
-                            .setNegativeButton(R.string.nodus_discard){_,_->confirm(R.string.nodus_discard_warning){nodus.resolve(conflict.id,false)}}
+                        if(conflict.state=="pending" && current.active) {
+                            if(!conflict.historical) dialog.setPositiveButton(R.string.nodus_apply){_,_->confirm(R.string.nodus_apply_warning){nodus.resolve(conflict.id,true)}}
+                            dialog.setNegativeButton(R.string.nodus_discard){_,_->confirm(R.string.nodus_discard_warning){nodus.resolve(conflict.id,false)}}
+                        }
                         dialog.show()
                     }.show()
             }

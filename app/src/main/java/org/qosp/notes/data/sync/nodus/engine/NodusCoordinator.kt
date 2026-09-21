@@ -118,7 +118,8 @@ internal class NodusCoordinator(
         requireDecimal(freshExpectedRevision)
         return planning.enqueueResolution(mappingId, conflictId, freshExpectedRevision)
     }
-    suspend fun discardConflict(mappingId: String, conflictId: String): String = planning.enqueueResolution(mappingId, conflictId, null)
+    suspend fun discardConflict(mappingId: String, conflictId: String, historical: Boolean = false): String =
+        planning.enqueueResolution(mappingId, conflictId, null, historical)
 
     /** Sending and scanning have separate bounds; every examined blocked row advances its
      * local continuation. Successful sends may revisit unprepared dependencies, within the
@@ -182,6 +183,14 @@ internal class NodusCoordinator(
             }
             operationRow = row.scanRowId; examined++
             val operation = row.operation
+            val historicalApply = Regex("^/api/v2/conflicts/([A-Za-z0-9_-]{1,128})/apply$").matchEntire(operation.path)
+                ?.groupValues?.get(1)?.let { dao.conflict(connectionId, it) }
+                ?.let { isStoredHistoricalConflict(it.body) } == true
+            if (historicalApply) {
+                dao.quarantineHistoricalApply(connectionId, operation.operationId, newNodusId())
+                blocks += "${operation.operationId}:historical_operation"
+                continue
+            }
             val config = checkedConfiguration()
             if (config == null || config.credentialEpoch != operation.credentialEpoch || config.deviceId != operation.deviceId) {
                 if (dao.latestEvidence(connectionId, operation.operationId)?.errorCode != "manual:credential_epoch_changed") unknown(operation, null, "manual:credential_epoch_changed")

@@ -284,7 +284,6 @@ internal data class V2Conflicts(
 internal data class V2CapabilitiesLimits(
     val mutationBytes: String,
     val noteBytes: String,
-    val v1ProjectionBytes: String,
     val attachmentBytes: String,
     val totalBlobBytes: String,
     val organizationNameBytes: String,
@@ -298,7 +297,6 @@ internal data class V2CapabilitiesLimits(
     init {
         require(mutationBytes == "1048576") { "Unsupported contract value" }
         require(noteBytes == "1048576") { "Unsupported contract value" }
-        require(v1ProjectionBytes == "262144") { "Unsupported contract value" }
         require(attachmentBytes == "536870912") { "Unsupported contract value" }
         require(totalBlobBytes == "21474836480") { "Unsupported contract value" }
         require(organizationNameBytes == "4096") { "Unsupported contract value" }

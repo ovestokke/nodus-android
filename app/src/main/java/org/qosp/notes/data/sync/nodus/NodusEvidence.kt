@@ -4,6 +4,7 @@ package org.qosp.notes.data.sync.nodus
 
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
@@ -36,81 +37,110 @@ internal object V2EventSerializer : JsonContentPolymorphicSerializer<V2Event>(V2
 }
 
 @Serializable
-private data class ProposalEnvelope(
+private data class NativeProposalEnvelope(
     val apiVersion: String,
     val method: String,
     val path: String,
     val input: JsonObject,
     val submittedBody: String
-)
+) { init { require(apiVersion == "v2") } }
+
+@Serializable
+private data class HistoricalProposalEnvelope(
+    val apiVersion: String,
+    val historical: Boolean,
+    val rawOperation: String
+) { init { require(apiVersion == "v1" && historical) } }
 
 @Serializable(with = V2ProposalSerializer::class)
-internal class V2Proposal(
-    val apiVersion: String,
-    val method: String,
-    val path: String,
-    val input: WireInput,
-    val submittedBody: String
-) {
-    override fun toString() = "V2Proposal([REDACTED])"
+internal sealed interface V2Proposal {
+    val apiVersion: String
+
+    class Native(
+        override val apiVersion: String,
+        val method: String,
+        val path: String,
+        val input: WireInput,
+        val submittedBody: String
+    ) : V2Proposal {
+        init { require(apiVersion == "v2") }
+        override fun toString() = "V2Proposal.Native([REDACTED])"
+    }
+
+    class Historical(
+        override val apiVersion: String,
+        val historical: Boolean,
+        val rawOperation: String
+    ) : V2Proposal {
+        init { require(apiVersion == "v1" && historical) }
+        override fun toString() = "V2Proposal.Historical([REDACTED])"
+    }
 }
 
 internal object V2ProposalSerializer : KSerializer<V2Proposal> {
-    override val descriptor: SerialDescriptor = ProposalEnvelope.serializer().descriptor
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("V2Proposal")
+
     @Suppress("UNCHECKED_CAST")
-    private fun inputSerializer(version: String, method: String, path: String, hasExpectation: Boolean): KSerializer<WireInput> =
+    private fun inputSerializer(method: String, path: String, hasExpectation: Boolean): KSerializer<WireInput> =
         (when {
-        version == "v2" && method == "PUT" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2CreateNoteApplyEvidenceInput.serializer() else V2CreateNote.serializer()
-        version == "v2" && method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2EditNote.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/content$").matches(path) -> V2Content.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/trash$").matches(path) -> V2Trash.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/restore$").matches(path) -> V2Lifecycle.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/purge$").matches(path) -> V2Lifecycle.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items$").matches(path) -> V2Append.serializer()
-        version == "v2" && method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ItemEdit.serializer()
-        version == "v2" && method == "DELETE" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ChildDelete.serializer()
-        version == "v2" && method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}/checked$").matches(path) -> V2Toggle.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/order$").matches(path) -> V2Order.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/reminders$").matches(path) -> V2ReminderCreate.serializer()
-        version == "v2" && method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/reminders/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ReminderEdit.serializer()
-        version == "v2" && method == "DELETE" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/reminders/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ChildDelete.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments$").matches(path) -> V2AttachmentCreate.serializer()
-        version == "v2" && method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2AttachmentEdit.serializer()
-        version == "v2" && method == "DELETE" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ChildDelete.serializer()
-        version == "v2" && method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments/order$").matches(path) -> V2AttachmentOrder.serializer()
-        version == "v2" && method == "PUT" && Regex("^/api/v2/tags/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2OrganizationCreateApplyEvidenceInput.serializer() else V2OrganizationCreate.serializer()
-        version == "v2" && method == "PATCH" && Regex("^/api/v2/tags/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationEdit.serializer()
-        version == "v2" && method == "DELETE" && Regex("^/api/v2/tags/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationDelete.serializer()
-        version == "v2" && method == "PUT" && Regex("^/api/v2/notebooks/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2OrganizationCreateApplyEvidenceInput.serializer() else V2OrganizationCreate.serializer()
-        version == "v2" && method == "PATCH" && Regex("^/api/v2/notebooks/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationEdit.serializer()
-        version == "v2" && method == "DELETE" && Regex("^/api/v2/notebooks/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationDelete.serializer()
-        version == "v2" && method == "PUT" && Regex("^/api/v2/blobs/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2BlobReserveApplyEvidenceInput.serializer() else V2BlobReserve.serializer()
-        version == "v1" && method == "PUT" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) LegacyCreateApplyEvidenceInput.serializer() else LegacyCreate.serializer()
-        version == "v1" && method == "PATCH" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}$").matches(path) -> LegacyEdit.serializer()
-        version == "v1" && method == "DELETE" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}$").matches(path) -> LegacyDelete.serializer()
-        version == "v1" && method == "POST" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}/items$").matches(path) -> LegacyAppend.serializer()
-        version == "v1" && method == "POST" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}/order$").matches(path) -> LegacyReorder.serializer()
-        version == "v1" && method == "PATCH" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}$").matches(path) -> LegacyItemEdit.serializer()
-        version == "v1" && method == "DELETE" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}$").matches(path) -> LegacyDelete.serializer()
-        version == "v1" && method == "PATCH" && Regex("^/api/v1/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}/checked$").matches(path) -> LegacyToggle.serializer()
+            method == "PUT" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2CreateNoteApplyEvidenceInput.serializer() else V2CreateNote.serializer()
+            method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2EditNote.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/content$").matches(path) -> V2Content.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/trash$").matches(path) -> V2Trash.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/restore$").matches(path) -> V2Lifecycle.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/purge$").matches(path) -> V2Lifecycle.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items$").matches(path) -> V2Append.serializer()
+            method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ItemEdit.serializer()
+            method == "DELETE" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ChildDelete.serializer()
+            method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/items/[A-Za-z0-9_-]{1,128}/checked$").matches(path) -> V2Toggle.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/order$").matches(path) -> V2Order.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/reminders$").matches(path) -> V2ReminderCreate.serializer()
+            method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/reminders/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ReminderEdit.serializer()
+            method == "DELETE" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/reminders/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ChildDelete.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments$").matches(path) -> V2AttachmentCreate.serializer()
+            method == "PATCH" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2AttachmentEdit.serializer()
+            method == "DELETE" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2ChildDelete.serializer()
+            method == "POST" && Regex("^/api/v2/notes/[A-Za-z0-9_-]{1,128}/attachments/order$").matches(path) -> V2AttachmentOrder.serializer()
+            method == "PUT" && Regex("^/api/v2/tags/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2OrganizationCreateApplyEvidenceInput.serializer() else V2OrganizationCreate.serializer()
+            method == "PATCH" && Regex("^/api/v2/tags/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationEdit.serializer()
+            method == "DELETE" && Regex("^/api/v2/tags/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationDelete.serializer()
+            method == "PUT" && Regex("^/api/v2/notebooks/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2OrganizationCreateApplyEvidenceInput.serializer() else V2OrganizationCreate.serializer()
+            method == "PATCH" && Regex("^/api/v2/notebooks/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationEdit.serializer()
+            method == "DELETE" && Regex("^/api/v2/notebooks/[A-Za-z0-9_-]{1,128}$").matches(path) -> V2OrganizationDelete.serializer()
+            method == "PUT" && Regex("^/api/v2/blobs/[A-Za-z0-9_-]{1,128}$").matches(path) -> if (hasExpectation) V2BlobReserveApplyEvidenceInput.serializer() else V2BlobReserve.serializer()
             else -> throw SerializationException("Unsupported proposal route")
         }) as KSerializer<WireInput>
 
     override fun deserialize(decoder: Decoder): V2Proposal {
         val json = decoder as JsonDecoder
-        val envelope = json.decodeSerializableValue(ProposalEnvelope.serializer())
-        val serializer = inputSerializer(envelope.apiVersion, envelope.method, envelope.path, "expectedRevision" in envelope.input)
+        val element = json.decodeJsonElement().jsonObject
+        val version = element["apiVersion"]?.jsonPrimitive?.takeIf { it.isString }?.content
+            ?: throw SerializationException("Missing proposal version")
+        if (version == "v1") {
+            val envelope = json.json.decodeFromJsonElement(HistoricalProposalEnvelope.serializer(), element)
+            return V2Proposal.Historical(envelope.apiVersion, envelope.historical, envelope.rawOperation)
+        }
+        if (version != "v2") throw SerializationException("Unsupported proposal version")
+        val envelope = json.json.decodeFromJsonElement(NativeProposalEnvelope.serializer(), element)
+        val serializer = inputSerializer(envelope.method, envelope.path, "expectedRevision" in envelope.input)
         val input = json.json.decodeFromJsonElement(serializer, envelope.input)
-        return V2Proposal(envelope.apiVersion, envelope.method, envelope.path, input, envelope.submittedBody)
+        return V2Proposal.Native(envelope.apiVersion, envelope.method, envelope.path, input, envelope.submittedBody)
     }
+
     override fun serialize(encoder: Encoder, value: V2Proposal) {
         val json = encoder as JsonEncoder
-        val hasExpectation = value.input is V2CreateNoteApplyEvidenceInput ||
-            value.input is V2OrganizationCreateApplyEvidenceInput || value.input is V2BlobReserveApplyEvidenceInput ||
-            value.input is LegacyCreateApplyEvidenceInput
-        val serializer = inputSerializer(value.apiVersion, value.method, value.path, hasExpectation)
-        val input = json.json.encodeToJsonElement(serializer, value.input).jsonObject
-        json.encodeSerializableValue(ProposalEnvelope.serializer(), ProposalEnvelope(value.apiVersion, value.method, value.path, input, value.submittedBody))
+        when (value) {
+            is V2Proposal.Historical -> json.encodeSerializableValue(HistoricalProposalEnvelope.serializer(),
+                HistoricalProposalEnvelope(value.apiVersion, value.historical, value.rawOperation))
+            is V2Proposal.Native -> {
+                val hasExpectation = value.input is V2CreateNoteApplyEvidenceInput ||
+                    value.input is V2OrganizationCreateApplyEvidenceInput || value.input is V2BlobReserveApplyEvidenceInput
+                val serializer = inputSerializer(value.method, value.path, hasExpectation)
+                val input = json.json.encodeToJsonElement(serializer, value.input).jsonObject
+                json.encodeSerializableValue(NativeProposalEnvelope.serializer(),
+                    NativeProposalEnvelope(value.apiVersion, value.method, value.path, input, value.submittedBody))
+            }
+        }
     }
 }
 
@@ -131,6 +161,16 @@ private data class ConflictEnvelope(
     val snapshot: JsonElement
 )
 
+@Serializable
+private data class StoredConflictEnvelope(
+    val id: String,
+    val state: ConflictState,
+    val parent: String,
+    val reason: String,
+    val operation: JsonObject,
+    val snapshot: JsonElement
+)
+
 @Serializable(with = V2ConflictSerializer::class)
 internal class V2Conflict(
     val id: String,
@@ -138,19 +178,23 @@ internal class V2Conflict(
     val parent: String,
     val reason: String,
     val operation: V2Proposal,
-    val snapshot: WireSnapshot?
+    val snapshot: WireSnapshot?,
+    val historicalSnapshot: JsonElement? = null
 ) {
     init {
         require(Regex("[A-Za-z0-9_-]{1,128}").matches(id))
         require(parent.isEmpty() || Regex("[A-Za-z0-9_-]{1,128}").matches(parent))
+        require((operation is V2Proposal.Native && historicalSnapshot == null) ||
+            (operation is V2Proposal.Historical && snapshot == null))
     }
     override fun toString() = "V2Conflict([REDACTED])"
 }
 
 internal object V2ConflictSerializer : KSerializer<V2Conflict> {
     override val descriptor = ConflictEnvelope.serializer().descriptor
+
     @Suppress("UNCHECKED_CAST")
-    private fun snapshotSerializer(operation: V2Proposal): KSerializer<WireSnapshot> =
+    private fun snapshotSerializer(operation: V2Proposal.Native): KSerializer<WireSnapshot> =
         (when (operation.path.split('/')[3]) {
             "notes" -> V2Note.serializer()
             "tags" -> V2Tag.serializer()
@@ -158,15 +202,34 @@ internal object V2ConflictSerializer : KSerializer<V2Conflict> {
             "blobs" -> V2Blob.serializer()
             else -> throw SerializationException("Unsupported snapshot target")
         }) as KSerializer<WireSnapshot>
+
     override fun deserialize(decoder: Decoder): V2Conflict {
         val json = decoder as JsonDecoder
         val e = json.decodeSerializableValue(ConflictEnvelope.serializer())
-        val snapshot = if (e.snapshot == JsonNull) null else json.json.decodeFromJsonElement(snapshotSerializer(e.operation), e.snapshot)
-        return V2Conflict(e.id, e.state, e.parent, e.reason, e.operation, snapshot)
+        return when (val operation = e.operation) {
+            is V2Proposal.Native -> {
+                val snapshot = if (e.snapshot == JsonNull) null else json.json.decodeFromJsonElement(snapshotSerializer(operation), e.snapshot)
+                V2Conflict(e.id, e.state, e.parent, e.reason, operation, snapshot)
+            }
+            is V2Proposal.Historical -> V2Conflict(e.id, e.state, e.parent, e.reason, operation, null,
+                e.snapshot.takeUnless { it == JsonNull })
+        }
     }
+
     override fun serialize(encoder: Encoder, value: V2Conflict) {
         val json = encoder as JsonEncoder
-        val snapshot = value.snapshot?.let { json.json.encodeToJsonElement(snapshotSerializer(value.operation), it) } ?: JsonNull
-        json.encodeSerializableValue(ConflictEnvelope.serializer(), ConflictEnvelope(value.id, value.state, value.parent, value.reason, value.operation, snapshot))
+        val snapshot = when (val operation = value.operation) {
+            is V2Proposal.Native -> value.snapshot?.let { json.json.encodeToJsonElement(snapshotSerializer(operation), it) } ?: JsonNull
+            is V2Proposal.Historical -> value.historicalSnapshot ?: JsonNull
+        }
+        json.encodeSerializableValue(ConflictEnvelope.serializer(),
+            ConflictEnvelope(value.id, value.state, value.parent, value.reason, value.operation, snapshot))
     }
+}
+
+/** Storage-only discriminator for retained pre-cutover conflict bytes. It never parses v1 input into a command. */
+internal fun isStoredHistoricalConflict(body: ByteArray): Boolean {
+    val text = body.toString(Charsets.UTF_8).also { require(it.toByteArray(Charsets.UTF_8).contentEquals(body)) }
+    val envelope = NodusJson.decode(StoredConflictEnvelope.serializer(), text)
+    return envelope.operation["apiVersion"]?.jsonPrimitive?.takeIf { it.isString }?.content == "v1"
 }

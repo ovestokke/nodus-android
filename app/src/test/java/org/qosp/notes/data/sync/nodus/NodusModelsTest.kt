@@ -7,7 +7,7 @@ import org.junit.Test
 internal object NodusFixtures {
     val note = """{"id":"n","kind":"checklist","title":"","text":"raw","archived":true,"pinned":true,"hidden":true,"markdownEnabled":false,"color":"purple","notebookId":null,"tagIds":[],"primaryReminderId":null,"items":[{"id":"i","text":"","checked":false,"position":0,"revision":"9007199254740993","deleted":true}],"revision":"9223372036854775807","created":"2000-01-01T00:00:00Z","updated":"2000-01-01T00:00:00Z","authoredAt":"1999-01-01T00:00:00.123456789Z","editedAt":"2000-01-01T00:00:00Z","state":"trash","trashedAt":"2000-01-01T00:00:00Z","sourceTrashedAt":null,"attachments":[{"id":"a","blobId":"b","kind":"image","description":"","fileName":"../../file.svg","position":0,"deleted":true}],"reminders":[{"id":"r","name":"","dueAt":"1999-01-01T00:00:00Z","deleted":true}]}"""
     val tag = """{"id":"t","name":"","revision":"12","created":"2000-01-01T00:00:00Z","updated":"2000-01-01T00:00:00Z","deleted":false}"""
-    val capabilities = """{"contractVersion":"2.0","realmId":"realm-fixture","features":["note-metadata","content-conversion","organization","multiple-reminders","attachments","trash-restore"],"limits":{"mutationBytes":"1048576","noteBytes":"1048576","v1ProjectionBytes":"262144","attachmentBytes":"536870912","totalBlobBytes":"21474836480","organizationNameBytes":"4096","attachmentFileNameBytes":"1024","lifetimeItemsPerNote":1000,"lifetimeAttachmentsPerNote":1000,"lifetimeRemindersPerNote":1000,"liveTagsPerNote":1000,"feedPageMaximum":100}}"""
+    val capabilities = """{"contractVersion":"2.0","realmId":"realm-fixture","features":["note-metadata","content-conversion","organization","multiple-reminders","attachments","trash-restore"],"limits":{"mutationBytes":"1048576","noteBytes":"1048576","attachmentBytes":"536870912","totalBlobBytes":"21474836480","organizationNameBytes":"4096","attachmentFileNameBytes":"1024","lifetimeItemsPerNote":1000,"lifetimeAttachmentsPerNote":1000,"lifetimeRemindersPerNote":1000,"liveTagsPerNote":1000,"feedPageMaximum":100}}"""
 }
 
 class NodusModelsTest {
@@ -57,6 +57,7 @@ class NodusModelsTest {
             NodusFixtures.capabilities.replace("\"attachments\",", ""),
             NodusFixtures.capabilities.replace("trash-restore", "attachments"),
             NodusFixtures.capabilities.replace("21474836480", "21474836481"),
+            NodusFixtures.capabilities.replace("\"attachmentBytes\"", "\"v1ProjectionBytes\":\"262144\",\"attachmentBytes\""),
             NodusFixtures.capabilities.replace("\"1048576\"", "1048576"),
             NodusFixtures.capabilities.replace(":1000", ":\"1000\"")
         )) assertThrows(Exception::class.java) { NodusJson.decode(V2Capabilities.serializer(), bad) }

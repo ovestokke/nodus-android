@@ -256,8 +256,16 @@ abstract class NodusDao {
             }
         } else {
             require(snapshots.isEmpty())
-            conflicts.forEach { require(it.connectionId == connectionId); validateConflict(it) }
-            putConflicts(conflicts)
+            val retained = conflicts.map {
+                require(it.connectionId == connectionId)
+                validateConflict(it)
+                val previous = conflict(connectionId, it.conflictId)
+                if (previous != null && isStoredHistoricalConflict(previous.body)) {
+                    require(previous.parentId == it.parentId && isStoredHistoricalConflict(it.body))
+                    it.copy(body = previous.body)
+                } else it
+            }
+            putConflicts(retained)
         }
         putCursor(NodusCursor(connectionId, "v2", stream, pageCursor, if (hasMore) pageUntil else null))
     }
@@ -368,7 +376,8 @@ abstract class NodusDao {
                 else -> {
                     // Embed raw input, not a parsed/re-encoded object, so duplicate keys fail.
                     val envelope = "{\"apiVersion\":\"v2\",\"method\":\"${value.method}\",\"path\":\"${value.path}\",\"input\":$body,\"submittedBody\":\"\"}"
-                    val proposal = NodusJson.decode(V2Proposal.serializer(), envelope)
+                    val proposal = NodusJson.decode(V2Proposal.serializer(), envelope) as? V2Proposal.Native
+                        ?: error("historical_operation")
                     require(proposal.input !is V2CreateNoteApplyEvidenceInput && proposal.input !is V2OrganizationCreateApplyEvidenceInput && proposal.input !is V2BlobReserveApplyEvidenceInput)
                 }
             }
@@ -445,6 +454,26 @@ abstract class NodusDao {
         val op = requireNotNull(outbox(connectionId, operationId))
         require(op.state in setOf(NodusOutboxState.RECEIPTED, NodusOutboxState.CONFLICT))
         require(latestEvidence(connectionId, operationId)?.kind in setOf(NodusEvidenceKind.RECEIPT, NodusEvidenceKind.CONFLICT))
+        updateOutboxState(connectionId, operationId, NodusOutboxState.RETIRED)
+    }
+
+    /** Retain but permanently suppress an apply that became forbidden historical evidence. */
+    @Transaction
+    open suspend fun quarantineHistoricalApply(connectionId: String, operationId: String, evidenceId: String) {
+        val op = requireNotNull(outbox(connectionId, operationId))
+        val conflictId = Regex("^/api/v2/conflicts/([A-Za-z0-9_-]{1,128})/apply$").matchEntire(op.path)?.groupValues?.get(1)
+            ?: error("Not a conflict apply")
+        val conflict = requireNotNull(conflict(connectionId, conflictId))
+        require(isStoredHistoricalConflict(conflict.body))
+        if (op.state == NodusOutboxState.RETIRED) {
+            require(latestEvidence(connectionId, operationId)?.errorCode == "manual:historical_operation")
+            return
+        }
+        require(op.state in setOf(NodusOutboxState.PREPARED, NodusOutboxState.SENT, NodusOutboxState.UNKNOWN))
+        if (latestEvidence(connectionId, operationId)?.errorCode != "manual:historical_operation") {
+            recordOutcome(NodusEvidence(connectionId, evidenceId, operationId, op.credentialEpoch,
+                NodusEvidenceKind.UNKNOWN, null, null, null, "manual:historical_operation"))
+        }
         updateOutboxState(connectionId, operationId, NodusOutboxState.RETIRED)
     }
 

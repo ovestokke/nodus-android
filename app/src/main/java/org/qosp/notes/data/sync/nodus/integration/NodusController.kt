@@ -20,7 +20,7 @@ data class NodusStatus(val connectionId:String?=null,val origin:String="",val to
     val synchronized:Boolean get()=active && pending==0 && conflicted==0 && blocked==0 && unknown==0
 }
 data class NodusConnectionView(val id:String,val origin:String,val realmId:String?)
-data class NodusConflictView(val id:String,val state:String,val evidence:String)
+data class NodusConflictView(val id:String,val state:String,val evidence:String,val historical:Boolean=false)
 
 /** Account identity is intentionally NOT inferred from token/origin. Each fresh setup has
  * a random local owner scope. A future authenticated server identity can be added explicitly. */
@@ -221,26 +221,43 @@ class NodusController internal constructor(private val db:AppDatabase,private va
     }
     suspend fun conflictList():List<NodusConflictView> {
         val id=dao.integration()?.configuredConnectionId ?: return emptyList()
-        return dao.conflicts(id).map{NodusConflictView(it.conflictId,it.state,wireString(it.body))}
+        return dao.conflicts(id).map{NodusConflictView(it.conflictId,it.state,wireString(it.body),isStoredHistoricalConflict(it.body))}
     }
     suspend fun resolve(conflictId:String,apply:Boolean,confirmed:Boolean) {
         require(confirmed)
         val id=requireNotNull(bridge.active()?.activeConnectionId)
         NodusConnectionLocks.get(id).withLock {
+            val record=requireNotNull(dao.conflict(id,conflictId))
+            val historical=isStoredHistoricalConflict(record.body)
+            require(record.state=="pending")
+            if(historical && apply) error("historical_operation")
+            val pending=dao.operations(id).filter { it.path.startsWith("/api/v2/conflicts/$conflictId/") && it.state!=NodusOutboxState.RETIRED }
+            val resolutionSuffix=if(apply) "/apply" else "/discard"
+            if(pending.any { it.path.endsWith(resolutionSuffix) }) return@withLock
+            if(pending.isNotEmpty()) {
+                require(historical && !apply && pending.all { it.path.endsWith("/apply") }) { "resolution_already_pending" }
+                pending.forEach { dao.quarantineHistoricalApply(id,it.operationId,newNodusId()) }
+            }
             val config=requireNotNull(credentials.configuration())
             requireRealm(id,testConnection(config.origin.toString(),config.bearerToken))
-            val pending=dao.operations(id).firstOrNull { it.path.startsWith("/api/v2/conflicts/$conflictId/") && it.state!=NodusOutboxState.RETIRED }
-            if(pending!=null) {
-                require(pending.path.endsWith(if(apply)"/apply" else "/discard")) { "resolution_already_pending" }
+            if(historical) {
+                val localKey="historical-conflict:$conflictId"
+                val mapped=dao.mappingByLocalKey(id,NodusResourceType.BLOB,localKey) ?: db.withTransaction {
+                    dao.mappingByLocalKey(id,NodusResourceType.BLOB,localKey) ?: NodusMapping(
+                        id,newNodusId(),NodusResourceType.BLOB,"",newNodusId(),localKey,null
+                    ).also { dao.addMappings(id,listOf(it)) }
+                }
+                require(bridge.active()?.credentialEpoch==config.credentialEpoch)
+                engine(id).discardConflict(mapped.mappingId,conflictId,historical=true)
                 return@withLock
             }
-            val record=requireNotNull(dao.conflict(id,conflictId))
             val conflict=NodusJson.decode(V2Conflict.serializer(),wireString(record.body))
             require(conflict.state==ConflictState.PENDING)
-            val parts=conflict.operation.path.split('/')
+            val operation=conflict.operation as? V2Proposal.Native ?: error("historical_operation")
+            val parts=operation.path.split('/')
             val type=when(parts[3]) { "notes" -> NodusResourceType.NOTE;"tags" -> NodusResourceType.TAG;"notebooks" -> NodusResourceType.NOTEBOOK;"blobs" -> NodusResourceType.BLOB;else -> error("unsupported_target") }
             val root=dao.mappingByWire(id,type,parts[4])
-            val v2NoteCreate=conflict.operation.apiVersion=="v2" && conflict.operation.method=="PUT" && type==NodusResourceType.NOTE && parts.size==5
+            val v2NoteCreate=operation.method=="PUT" && type==NodusResourceType.NOTE && parts.size==5
             suspend fun retainTarget()=root ?: db.withTransaction {
                 dao.mappingByWire(id,type,parts[4]) ?: NodusMapping(id,newNodusId(),type,"",parts[4],newNodusId(),null).also {
                     dao.addMappings(id,listOf(it))
@@ -253,7 +270,7 @@ class NodusController internal constructor(private val db:AppDatabase,private va
                     when(type) {
                         NodusResourceType.NOTE -> NodusJson.decode(V2Note.serializer(),wireString(response.body)).let { note ->
                             require(note.id==parts[4])
-                            if(parts.getOrNull(5)=="items" && parts.getOrNull(6)!=null && conflict.operation.method in setOf("PATCH","DELETE"))
+                            if(parts.getOrNull(5)=="items" && parts.getOrNull(6)!=null && operation.method in setOf("PATCH","DELETE"))
                                 note.items.single { it.id==parts[6] }.revision
                             else note.revision
                         }
