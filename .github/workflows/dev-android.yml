@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     if: github.repository == 'ovestokke/nodus-android'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v7
