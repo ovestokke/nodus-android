@@ -20,7 +20,15 @@ data class NodusStatus(val connectionId:String?=null,val origin:String="",val to
     val synchronized:Boolean get()=active && pending==0 && conflicted==0 && blocked==0 && unknown==0
 }
 data class NodusConnectionView(val id:String,val origin:String,val realmId:String?)
-data class NodusConflictView(val id:String,val state:String,val evidence:String,val historical:Boolean=false)
+data class NodusConflictView(
+    val id:String,
+    val state:String,
+    val title:String,
+    val description:String,
+    val proposed:String?=null,
+    val current:String?=null,
+    val historical:Boolean=false
+)
 
 /** Account identity is intentionally NOT inferred from token/origin. Each fresh setup has
  * a random local owner scope. A future authenticated server identity can be added explicitly. */
@@ -221,7 +229,55 @@ class NodusController internal constructor(private val db:AppDatabase,private va
     }
     suspend fun conflictList():List<NodusConflictView> {
         val id=dao.integration()?.configuredConnectionId ?: return emptyList()
-        return dao.conflicts(id).map{NodusConflictView(it.conflictId,it.state,wireString(it.body),isStoredHistoricalConflict(it.body))}
+        return dao.conflicts(id).map { record ->
+            if(isStoredHistoricalConflict(record.body)) NodusConflictView(record.conflictId,record.state,
+                "Older sync conflict","This change was saved by an older Nodus version. Keep the current server version to close it.",historical=true)
+            else conflictView(record.conflictId,record.state,NodusJson.decode(V2Conflict.serializer(),wireString(record.body)))
+        }
+    }
+    private fun conflictView(id:String,state:String,conflict:V2Conflict):NodusConflictView {
+        if(conflict.operation is V2Proposal.Historical) return NodusConflictView(id,state,
+            "Older sync conflict","This change was saved by an older Nodus version. Keep the current server version to close it.",historical=true)
+        val proposal=conflict.operation as V2Proposal.Native
+        val note=conflict.snapshot as? V2Note
+        val noteName=note?.title?.takeIf(String::isNotBlank)?.let { "“$it”" } ?: "an untitled note"
+        val itemId=proposal.path.substringAfter("/items/","").substringBefore('/')
+        val item=note?.items?.firstOrNull { it.id==itemId }
+        fun <T> value(field:WireField<T>):T?=(field as? WireField.Present<T>)?.value
+        return when(val input=proposal.input) {
+            is V2ItemEdit -> {
+                val text=value(input.text)
+                val checked=value(input.checked)
+                when {
+                    text!=null -> NodusConflictView(id,state,"Checklist item in $noteName",
+                        "The item was changed in two places. Choose which text to keep.",text,item?.text)
+                    checked!=null -> NodusConflictView(id,state,"Checklist item in $noteName",
+                        "The item status was changed in two places. Choose which status to keep.",
+                        if(checked)"Completed" else "Not completed",item?.let { if(it.checked)"Completed" else "Not completed" })
+                    else -> NodusConflictView(id,state,"Checklist change in $noteName","Choose which version to keep.")
+                }
+            }
+            is V2Toggle -> NodusConflictView(id,state,"Checklist item in $noteName",
+                "The item status was changed in two places. Choose which status to keep.",
+                if(input.checked)"Completed" else "Not completed",item?.let { if(it.checked)"Completed" else "Not completed" })
+            is V2EditNote -> {
+                val title=value(input.title)
+                val text=value(input.text)
+                when {
+                    title!=null -> NodusConflictView(id,state,"Note title in $noteName",
+                        "The title was changed in two places. Choose which title to keep.",title,note?.title)
+                    text!=null -> NodusConflictView(id,state,"Note text in $noteName",
+                        "The note was changed in two places. Choose which text to keep.",text,note?.text)
+                    else -> NodusConflictView(id,state,"Note settings in $noteName","Choose which version to keep.")
+                }
+            }
+            is V2OrganizationEdit -> {
+                val currentName=when(val snapshot=conflict.snapshot) { is V2Tag -> snapshot.name; is V2Notebook -> snapshot.name; else -> null }
+                NodusConflictView(id,state,"Name changed in two places","Choose which name to keep.",input.name,currentName)
+            }
+            else -> NodusConflictView(id,state,"Sync conflict in $noteName",
+                "A saved change conflicts with a newer server version. Choose which version to keep.")
+        }
     }
     suspend fun resolve(conflictId:String,apply:Boolean,confirmed:Boolean) {
         require(confirmed)

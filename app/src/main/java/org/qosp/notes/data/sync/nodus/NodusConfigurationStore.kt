@@ -62,6 +62,7 @@ internal class NodusConfigurationStore internal constructor(
         val previous=loadOrCreate()
         val normalized=if(code.isBlank()) null else normalizePairingCode(code)
         previous.pendingPairing?.let { pending ->
+            require(origin.toString()==pending.origin) { "pairing_origin_changed" }
             require(normalized==null || normalized==pending.code) { "pairing_retry_required" }
             require(targetConnectionId==pending.targetConnectionId) { "pairing_target_changed" }
             return@synchronized pending

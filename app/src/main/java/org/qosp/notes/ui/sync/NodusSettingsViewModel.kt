@@ -24,6 +24,27 @@ data class NodusSettingsState(val status:NodusStatus=NodusStatus(),val busy:Bool
 class NodusSettingsViewModel(private val controller:NodusController):ViewModel() {
     private val mutable=MutableStateFlow(NodusSettingsState())
     val state=mutable.asStateFlow()
+    private fun pairingMessage(error:Exception,pending:Boolean)=when(error.message) {
+        "invalid_pairing" -> R.string.nodus_pairing_invalid
+        "pairing_key_reuse" -> R.string.nodus_pairing_reused
+        "pairing_throttled" -> R.string.nodus_pairing_throttled
+        "pairing_recovery_required" -> R.string.nodus_pairing_recovery
+        "pairing_origin_changed" -> if(pending)R.string.nodus_pairing_origin_changed else R.string.nodus_pairing_failed
+        "pairing_retry_required","pairing_target_changed" -> if(pending)R.string.nodus_pairing_retry_saved else R.string.nodus_pairing_failed
+        else -> when(error) {
+            is UnknownHostException -> R.string.nodus_pairing_dns_failed
+            is SocketTimeoutException -> R.string.nodus_pairing_timeout
+            is SSLException -> R.string.nodus_pairing_tls_failed
+            is ConnectException -> R.string.nodus_pairing_network_failed
+            is IllegalArgumentException -> R.string.nodus_pairing_input_invalid
+            else -> if(pending)R.string.nodus_pairing_failed_pending else R.string.nodus_pairing_failed
+        }
+    }
+    private fun actionMessage(error:Exception)=when(error) {
+        is UnknownHostException,is SocketTimeoutException,is SSLException,is ConnectException,is IOException -> R.string.nodus_network_failed
+        is IllegalArgumentException -> R.string.nodus_action_invalid
+        else -> R.string.nodus_action_failed
+    }
     private fun action(success:Int?=null,clearToken:Boolean=false,pairing:Boolean=false,block:suspend ()->Unit) {
         if(mutable.value.busy)return
         mutable.value=mutable.value.copy(busy=true,pairingBusy=pairing,message=null)
@@ -35,21 +56,7 @@ class NodusSettingsViewModel(private val controller:NodusController):ViewModel()
             } catch(cancel:CancellationException) { throw cancel }
             catch(error:Exception) {
                 val status=try {controller.status()} catch(_:Exception) {NodusStatus(issues=listOf("status_unavailable"))}
-                val message=when(error.message) {
-                    "invalid_pairing" -> R.string.nodus_pairing_invalid
-                    "pairing_key_reuse" -> R.string.nodus_pairing_reused
-                    "pairing_throttled" -> R.string.nodus_pairing_throttled
-                    "pairing_recovery_required" -> R.string.nodus_pairing_recovery
-                    "pairing_retry_required","pairing_target_changed" -> R.string.nodus_pairing_retry_saved
-                    else -> when(error) {
-                        is UnknownHostException -> R.string.nodus_pairing_dns_failed
-                        is SocketTimeoutException -> R.string.nodus_pairing_timeout
-                        is SSLException -> R.string.nodus_pairing_tls_failed
-                        is ConnectException,is IOException -> R.string.nodus_pairing_network_failed
-                        is IllegalArgumentException -> R.string.nodus_pairing_input_invalid
-                        else -> R.string.nodus_action_failed
-                    }
-                }
+                val message=if(pairing)pairingMessage(error,status.pairingPending) else actionMessage(error)
                 mutable.value=mutable.value.copy(status=status,busy=false,pairingBusy=false,message=message)
             }
         }

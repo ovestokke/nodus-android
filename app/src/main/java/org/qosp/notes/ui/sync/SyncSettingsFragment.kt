@@ -140,38 +140,93 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
             pairingCode.setText(arguments?.getString("pairingCode").orEmpty())
             model.setPreference(CloudService.NODUS)
         }
-        retained.setOnClickListener { nodus.connections() }
-        pair.setOnClickListener { nodus.pair(origin.text.toString(),pairingCode.text.toString()) }
+        pair.setOnClickListener {
+            val code=if(nodus.state.value.status.pairingPending) "" else pairingCode.text.toString()
+            nodus.pair(origin.text.toString(),code)
+        }
         cancelPairing.setOnClickListener { confirm(R.string.nodus_cancel_pairing_warning){nodus.cancelPairing()} }
         activate.setOnClickListener { confirm(R.string.nodus_activate_warning){nodus.activate()} }
-        disconnect.setOnClickListener { confirm(R.string.nodus_disconnect_warning){nodus.disconnect(false)} }
-        clear.setOnClickListener { confirm(R.string.nodus_epoch_warning){nodus.disconnect(true)} }
         sync.setOnClickListener { nodus.sync() }
         conflicts.setOnClickListener { nodus.conflicts() }
         nodus.state.collect(viewLifecycleOwner) { state ->
             val current=state.status
             if(origin.text.isEmpty()) origin.setText(current.origin.ifEmpty { "https://nodus.vstokke.com" })
             if(state.credentialVersion!=credentialVersion){pairingCode.setText("");origin.setText(current.origin.ifEmpty { origin.text });credentialVersion=state.credentialVersion}
+
+            val needsPairing=!current.tokenSaved
+            origin.show(needsPairing)
+            origin.isEnabled=!state.busy && !current.pairingPending
+            pairingCode.show(needsPairing && !current.pairingPending)
+            pair.show(needsPairing)
+            cancelPairing.show(current.pairingCancelable)
             pairingStatus.setText(when {
-                current.pairingPending -> R.string.nodus_pairing_pending
+                current.active -> R.string.nodus_connected
                 current.tokenSaved -> R.string.nodus_credential_saved
+                current.pairingPending -> R.string.nodus_pairing_pending
                 else -> R.string.nodus_pairing_ready
             })
-            cancelPairing.show(current.pairingCancelable)
-            status.text=getString(R.string.nodus_status_detail,
-                getString(if(current.synchronized)R.string.nodus_synchronized else R.string.nodus_not_synchronized),
-                getString(R.string.nodus_status,current.pending,current.conflicted,current.blocked,current.unknown),
-                current.issues.joinToString(separator="\n"))
-            pair.setText(if(state.pairingBusy)R.string.nodus_pairing_connecting else R.string.nodus_pair)
+            pairingHelp.text=when {
+                current.active -> getString(R.string.nodus_connected_help,current.origin)
+                current.tokenSaved -> getString(R.string.nodus_credential_saved_help,current.origin)
+                current.pairingPending -> getString(R.string.nodus_pairing_pending_help)
+                else -> getString(R.string.nodus_pairing_ready_help)
+            }
+            pair.setText(when {
+                state.pairingBusy -> R.string.nodus_pairing_connecting
+                current.pairingPending -> R.string.nodus_pairing_continue
+                else -> R.string.nodus_pair
+            })
+
+            val showSync=current.connectionId!=null || current.tokenSaved
+            syncHeading.show(showSync)
+            status.show(showSync)
+            status.text=when {
+                current.synchronized -> getString(R.string.nodus_synchronized)
+                current.conflicted>0 -> getString(R.string.nodus_sync_conflicted,current.conflicted)
+                current.blocked>0 -> getString(R.string.nodus_sync_blocked,current.blocked)
+                current.unknown>0 -> getString(R.string.nodus_sync_unknown,current.unknown)
+                current.pending>0 -> getString(R.string.nodus_sync_waiting,current.pending)
+                else -> getString(R.string.nodus_sync_ready)
+            }
+            conflicts.show(current.conflicted>0)
+            conflicts.text=getString(R.string.nodus_conflicts_count,current.conflicted)
+            sync.show(current.active)
+            activate.show(current.connectionId!=null && current.tokenSaved && !current.active)
+
+            val showConnection=current.connectionId!=null || current.tokenSaved
+            connectionHeading.show(showConnection)
+            retained.show(showConnection)
+            retained.setOnClickListener {
+                val labels=buildList {
+                    if(current.connectionId!=null)add(getString(R.string.nodus_retained))
+                    if(current.active)add(getString(R.string.nodus_disconnect))
+                    if(current.tokenSaved)add(getString(R.string.nodus_clear))
+                }
+                MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.nodus_manage_connection)
+                    .setItems(labels.toTypedArray()){_,index ->
+                        var item=index
+                        if(current.connectionId!=null) {
+                            if(item==0){nodus.connections();return@setItems}
+                            item--
+                        }
+                        if(current.active) {
+                            if(item==0){confirm(R.string.nodus_disconnect_warning){nodus.disconnect(false)};return@setItems}
+                            item--
+                        }
+                        if(current.tokenSaved && item==0)confirm(R.string.nodus_epoch_warning){nodus.disconnect(true)}
+                    }.setNegativeButton(android.R.string.cancel,null).show()
+            }
+
             message.text=if(state.busy)getString(R.string.nodus_busy) else state.message?.let(::getString).orEmpty()
-            listOf(pair,cancelPairing,activate,disconnect,clear,sync,conflicts,retained).forEach{it.isEnabled = !state.busy}
+            message.show(message.text.isNotEmpty())
+            listOf(pair,cancelPairing,activate,sync,conflicts,retained).forEach{it.isEnabled = !state.busy}
             activate.isEnabled = !state.busy && current.connectionId!=null && current.tokenSaved && !current.active
             sync.isEnabled = !state.busy && current.active
-            conflicts.isEnabled = !state.busy && current.connectionId!=null
+            conflicts.isEnabled = !state.busy && current.conflicted>0
             if(state.showConnections) {
                 nodus.consumeConnections()
                 MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.nodus_retained)
-                    .setItems(state.connections.map { "${it.origin} (${it.id}; ${it.realmId ?: "unverified"})" }.toTypedArray()){_,index ->
+                    .setItems(state.connections.map { it.origin }.toTypedArray()){_,index ->
                         confirm(R.string.nodus_review_warning){nodus.reviewConnection(state.connections[index].id)}
                     }.setNegativeButton(android.R.string.cancel,null).show()
             }
@@ -179,9 +234,14 @@ class SyncSettingsFragment : BaseFragment(R.layout.fragment_sync_settings) {
                 nodus.consumeConflictList()
                 if(state.conflicts.isEmpty()) MaterialAlertDialogBuilder(requireContext()).setMessage(R.string.nodus_no_conflicts).setPositiveButton(android.R.string.ok,null).show()
                 else MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.nodus_conflicts)
-                    .setItems(state.conflicts.map{ "${it.id} (${it.state})" }.toTypedArray()){_,index->
+                    .setItems(state.conflicts.map{ it.title }.toTypedArray()){_,index->
                         val conflict=state.conflicts[index]
-                        val dialog=MaterialAlertDialogBuilder(requireContext()).setTitle(conflict.id).setMessage(conflict.evidence).setNeutralButton(android.R.string.cancel,null)
+                        val details=buildString {
+                            append(conflict.description)
+                            conflict.proposed?.let { append("\n\n");append(getString(R.string.nodus_conflict_proposed));append("\n");append(it) }
+                            conflict.current?.let { append("\n\n");append(getString(R.string.nodus_conflict_current));append("\n");append(it) }
+                        }
+                        val dialog=MaterialAlertDialogBuilder(requireContext()).setTitle(conflict.title).setMessage(details).setNeutralButton(android.R.string.cancel,null)
                         if(conflict.state=="pending" && current.active) {
                             if(!conflict.historical) dialog.setPositiveButton(R.string.nodus_apply){_,_->confirm(R.string.nodus_apply_warning){nodus.resolve(conflict.id,true)}}
                             dialog.setNegativeButton(R.string.nodus_discard){_,_->confirm(R.string.nodus_discard_warning){nodus.resolve(conflict.id,false)}}

@@ -60,6 +60,11 @@ class NodusConfigurationStoreTest {
         val reopened=store(file,key)
         assertEquals(pending,reopened.pendingPairing())
         assertEquals(pending,reopened.beginPairing(NodusOrigin.parse("https://notes.example"),"",null))
+        val changedOrigin=assertThrows(IllegalArgumentException::class.java) {
+            reopened.beginPairing(NodusOrigin.parse("https://other.example"),"",null)
+        }
+        assertEquals("pairing_origin_changed",changedOrigin.message)
+        assertEquals(pending,reopened.pendingPairing())
         assertThrows(Exception::class.java) { reopened.beginPairing(NodusOrigin.parse("https://notes.example"),"CDEFG-HJKLM",null) }
         val response=PairingRedeem("paired.${pending.credentialSecret}","paired")
         val accepted=reopened.acceptPairing(pending,response)

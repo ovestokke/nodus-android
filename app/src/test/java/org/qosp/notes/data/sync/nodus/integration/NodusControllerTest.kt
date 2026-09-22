@@ -225,7 +225,9 @@ class NodusControllerTest {
         freshNote=old.copy(revision="41")
         conflict=V2Conflict("clash",ConflictState.PENDING,"","revision_mismatch",proposal,old)
         val evidence=controller.refreshConflicts().single()
-        assertTrue(evidence.evidence.contains("original-request"))
+        assertEquals("proposal",evidence.proposed)
+        assertEquals(old.title,evidence.current)
+        assertFalse(evidence.toString().contains("original-request"))
         assertTrue(controller.status().conflicted>0)
         assertThrows(Exception::class.java){runBlocking{controller.resolve("clash",true,false)}}
         controller.resolve("clash",true,true)
@@ -238,7 +240,7 @@ class NodusControllerTest {
         controller.refreshConflicts();controller.resolve("discard-clash",false,true)
         assertTrue(dao.operations(id).any{it.path.endsWith("/discard")})
         assertEquals("retained local draft",db.noteDao.getById(localId).first()!!.title)
-        assertEquals(evidence.evidence,controller.conflictList().first{it.id=="clash"}.evidence)
+        assertEquals(evidence,controller.conflictList().first{it.id=="clash"})
         assertTrue(dao.captures(id).isNotEmpty())
     }
 
@@ -256,7 +258,12 @@ class NodusControllerTest {
             trashedAt=null,sourceTrashedAt=null,items=listOf(Item(item.wireId,"task",false,0,"17",false)),attachments=emptyList(),reminders=emptyList(),primaryReminderId=null)
         freshNote=current
         conflict=V2Conflict("item-clash",ConflictState.PENDING,"","revision_mismatch",proposal,current.copy(revision="40",items=current.items.map { it.copy(revision="5") }))
-        controller.refreshConflicts();controller.resolve("item-clash",true,true)
+        val view=controller.refreshConflicts().single()
+        assertTrue(view.title.startsWith("Checklist item in"))
+        assertEquals("Completed",view.proposed)
+        assertEquals("Not completed",view.current)
+        assertFalse(view.toString().contains("original-item-request"))
+        controller.resolve("item-clash",true,true)
         val apply=dao.operations(id).single { it.path=="/api/v2/conflicts/item-clash/apply" }
         assertEquals("17",NodusJson.decode(V2Apply.serializer(),wireString(apply.body!!)).expectedRevision)
     }
@@ -285,7 +292,7 @@ class NodusControllerTest {
             V2Proposal.Historical("v1",true,raw),null,JsonNull)
         val view=controller.refreshConflicts().single()
         assertTrue(view.historical)
-        assertTrue(view.evidence.contains(raw))
+        assertFalse(view.toString().contains(raw))
         val reads=gets.size
         assertThrows(IllegalStateException::class.java){runBlocking{controller.resolve("historical-clash",true,true)}}
         assertEquals(reads,gets.size)

@@ -1,10 +1,13 @@
 package org.qosp.notes.data.sync.nodus
 
+import androidx.annotation.Keep
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
 
+/** Retrofit creates this implementation at runtime; keeping it prevents R8 from replacing the proxy cast. */
+@Keep
 internal interface NodusApi {
     @HTTP(method = "GET", path = "api/v2/capabilities", hasBody = false)
     suspend fun getCapabilities(): Response<V2Capabilities>

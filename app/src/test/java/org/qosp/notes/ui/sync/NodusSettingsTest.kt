@@ -31,7 +31,9 @@ class NodusSettingsTest {
         assertTrue(binding.pairingCode.inputType and InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS!=0)
         assertFalse(binding.pairingCode.isSaveEnabled)
         assertEquals(android.view.View.IMPORTANT_FOR_AUTOFILL_NO,binding.pairingCode.importantForAutofill)
-        assertNotNull(binding.pair);assertNotNull(binding.cancelPairing)
+        assertFalse(binding.pair.isAllCaps)
+        assertFalse(binding.cancelPairing.isAllCaps)
+        assertNotNull(binding.pairingHelp);assertNotNull(binding.retained)
         assertNotNull(binding.activate);assertNotNull(binding.conflicts);assertNotNull(binding.status)
     }
 
@@ -74,7 +76,7 @@ class NodusSettingsTest {
         val controller=mockk<NodusController>()
         coEvery {controller.status()} returns NodusStatus(active=true,pending=2,blocked=1,unknown=1)
         coEvery {controller.pair(any(),any(),true)} just Runs
-        coEvery {controller.refreshConflicts()} returns listOf(NodusConflictView("conflict","pending","exact evidence"))
+        coEvery {controller.refreshConflicts()} returns listOf(NodusConflictView("conflict","pending","Checklist item","Choose which version to keep.","new","current"))
         coEvery {controller.resolve("conflict",false,true)} just Runs
         val model=NodusSettingsViewModel(controller)
         model.pair("https://notes.example","23456-789AB")
@@ -82,7 +84,8 @@ class NodusSettingsTest {
         coVerify(exactly=1){controller.pair("https://notes.example","23456-789AB",true)}
         model.conflicts()
         val state=withTimeout(5000){model.state.first{!it.busy && it.showConflicts}}
-        assertEquals("exact evidence",state.conflicts.single().evidence)
+        assertEquals("Checklist item",state.conflicts.single().title)
+        assertEquals("new",state.conflicts.single().proposed)
         assertFalse(state.status.synchronized)
         model.consumeConflictList();model.resolve("conflict",false)
         withTimeout(5000){model.state.first{!it.busy}}

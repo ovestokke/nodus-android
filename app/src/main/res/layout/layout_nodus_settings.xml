@@ -1,25 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:padding="16dp">
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="@string/preferences_cloud_service_nodus" android:textStyle="bold" />
-    <EditText android:id="@+id/origin" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:minHeight="48dp" android:hint="@string/nodus_origin" android:inputType="textUri" android:autofillHints="url" android:singleLine="true" />
-    <EditText android:id="@+id/pairing_code" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:minHeight="48dp" android:hint="@string/nodus_pairing_code" android:inputType="textCapCharacters|textNoSuggestions"
-        android:importantForAutofill="no" android:saveEnabled="false" android:singleLine="true" />
-    <TextView android:id="@+id/pairing_status" android:layout_width="match_parent" android:layout_height="wrap_content" />
-    <Button android:id="@+id/pair" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nodus_pair" />
-    <Button android:id="@+id/cancel_pairing" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="@string/nodus_cancel_pairing" android:visibility="gone" />
-    <Button android:id="@+id/retained" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nodus_retained" />
-    <Button android:id="@+id/activate" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nodus_activate" />
-    <Button android:id="@+id/disconnect" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nodus_disconnect" />
-    <Button android:id="@+id/clear" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nodus_clear" />
-    <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:accessibilityLiveRegion="polite" android:textIsSelectable="true" />
-    <TextView android:id="@+id/message" android:layout_width="match_parent" android:layout_height="wrap_content" android:accessibilityLiveRegion="polite" />
-    <Button android:id="@+id/sync" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nodus_sync" />
-    <Button android:id="@+id/conflicts" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/nodus_conflicts" />
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/pairing_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/pairing_help"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:lineSpacingExtra="2dp" />
+
+    <EditText
+        android:id="@+id/origin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:autofillHints="url"
+        android:hint="@string/nodus_origin"
+        android:inputType="textUri"
+        android:minHeight="48dp"
+        android:singleLine="true" />
+
+    <EditText
+        android:id="@+id/pairing_code"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:importantForAutofill="no"
+        android:hint="@string/nodus_pairing_code"
+        android:inputType="textCapCharacters|textNoSuggestions"
+        android:minHeight="48dp"
+        android:saveEnabled="false"
+        android:singleLine="true" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/pair"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:letterSpacing="0"
+        android:text="@string/nodus_pair"
+        android:textAllCaps="false" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cancel_pairing"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:letterSpacing="0"
+        android:text="@string/nodus_cancel_pairing"
+        android:textAllCaps="false"
+        android:visibility="gone" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/activate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:letterSpacing="0"
+        android:text="@string/nodus_activate"
+        android:textAllCaps="false"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/sync_heading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="@string/nodus_sync_heading"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:accessibilityLiveRegion="polite"
+        android:lineSpacingExtra="2dp"
+        android:textIsSelectable="true"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:accessibilityLiveRegion="polite"
+        android:lineSpacingExtra="2dp"
+        android:visibility="gone" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/conflicts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:letterSpacing="0"
+        android:text="@string/nodus_conflicts"
+        android:textAllCaps="false"
+        android:visibility="gone" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/sync"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:letterSpacing="0"
+        android:text="@string/nodus_sync"
+        android:textAllCaps="false"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/connection_heading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="@string/nodus_connection_heading"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/retained"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:letterSpacing="0"
+        android:text="@string/nodus_manage_connection"
+        android:textAllCaps="false"
+        android:visibility="gone" />
 </LinearLayout>
