@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import io.noties.markwon.Markwon
 import org.qosp.notes.data.model.NoteTask
 import org.qosp.notes.databinding.LayoutTaskBinding
 import java.lang.Float.min
@@ -13,7 +12,6 @@ import java.util.Collections
 class TasksAdapter(
     private val inPreview: Boolean,
     var listener: TaskRecyclerListener?,
-    private val markwon: Markwon,
 ) : RecyclerView.Adapter<TaskViewHolder>() {
 
     private var fontSize: Float = -1.0f
@@ -33,7 +31,7 @@ class TasksAdapter(
         binding.checkBox.scaleX = checkBoxScaleRatio
         binding.checkBox.scaleY = checkBoxScaleRatio
 
-        return TaskViewHolder(parent.context, binding, listener, inPreview, markwon)
+        return TaskViewHolder(parent.context, binding, listener, inPreview)
     }
 
     override fun onBindViewHolder(holder: TaskViewHolder, position: Int) {

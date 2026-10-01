@@ -1,0 +1,20 @@
+[
+  {"name":"biltema-checklist","text":"https://www.biltema.no/bil---mc/elektrisk-anlegg/kontakter-og-uttak-12-volt/batteriledning-2000053806","links":["https://www.biltema.no/bil---mc/elektrisk-anlegg/kontakter-og-uttak-12-volt/batteriledning-2000053806"]},
+  {"name":"multiple-lines","text":"First https://example.com/a\nSecond http://example.org/b?x=1&y=2#part","links":["https://example.com/a","http://example.org/b?x=1&y=2#part"]},
+  {"name":"sentence-punctuation","text":"See https://example.com/a.,!?;: next","links":["https://example.com/a"]},
+  {"name":"balanced-parentheses","text":"(https://example.com/a_(b)).","links":["https://example.com/a_(b)"]},
+  {"name":"balanced-brackets-braces","text":"[https://example.com/a[b]{c}].","links":["https://example.com/a[b]{c}"]},
+  {"name":"unicode-and-quotes","text":"See “https://例子.测试/路径?q=blå” and 'https://example.org/æøå'.","links":["https://例子.测试/路径?q=blå","https://example.org/æøå"]},
+  {"name":"preserve-encoding","text":"https://example.com/a%20b?q=%26#fragment","links":["https://example.com/a%20b?q=%26#fragment"]},
+  {"name":"case-and-port","text":"HTTP://localhost:8080/a HTTPS://EXAMPLE.COM/b","links":["HTTP://localhost:8080/a","HTTPS://EXAMPLE.COM/b"]},
+  {"name":"ipv6","text":"http://[::1]:8080/a","links":["http://[::1]:8080/a"]},
+  {"name":"bare-hosts-stay-plain","text":"example.com www.example.com user@example.com","links":[]},
+  {"name":"unsafe-schemes","text":"javascript:alert(1) data:text/html,test file:///tmp/a ftp://example.com mailto:user@example.com javascript:https://example.com","links":[]},
+  {"name":"embedded-not-a-link","text":"abchttps://example.com user@https://example.com /https://example.com","links":[]},
+  {"name":"missing-host","text":"https:// http:///path https://?x=1","links":[]},
+  {"name":"userinfo-and-ports","text":"https://user:pass@example.com/a https://example.com:0/a https://example.com:65536/a https://example.com:no/a","links":[]},
+  {"name":"bidi-formatting","text":"https://exam\u202eple.com/a https://example.com/\u2066hidden","links":[]},
+  {"name":"markup-is-text","text":"<b>https://example.com/a</b> & <img src=x onerror=alert(1)>","links":["https://example.com/a"]},
+  {"name":"query-ampersand","text":"Get https://example.com/search?q=bolts&size=12 now.","links":["https://example.com/search?q=bolts&size=12"]},
+  {"name":"plain-backslash","text":"https://example.com/a\\b","links":["https://example.com/a"]}
+]

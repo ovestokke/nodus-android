@@ -10,13 +10,10 @@ import android.view.MotionEvent
 import android.view.inputmethod.EditorInfo
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.animation.doOnEnd
-import androidx.core.text.clearSpans
-import androidx.core.text.toSpannable
 import androidx.core.view.isVisible
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.RecyclerView
-import io.noties.markwon.Markwon
 import org.qosp.notes.R
 import org.qosp.notes.data.model.NoteTask
 import org.qosp.notes.databinding.LayoutTaskBinding
@@ -27,17 +24,18 @@ import org.qosp.notes.ui.utils.getDrawableCompat
 import org.qosp.notes.ui.utils.hideKeyboard
 import org.qosp.notes.ui.utils.requestFocusAndKeyboard
 import org.qosp.notes.ui.utils.resolveAttribute
+import org.qosp.notes.ui.utils.setHttpLinkText
 
 class TaskViewHolder(
     private val context: Context,
     private val binding: LayoutTaskBinding,
     listener: TaskRecyclerListener?,
     private val inPreview: Boolean,
-    private val markwon: Markwon,
 ) : RecyclerView.ViewHolder(binding.root) {
 
     private var isContentLoaded: Boolean = false
     private var isChecked: Boolean = false
+    private val taskTextColors = binding.textView.textColors
 
     init {
         with(binding) {
@@ -133,7 +131,7 @@ class TaskViewHolder(
                 dragHandle.isVisible = enabled
                 editText.isVisible = enabled && !isChecked
                 textView.isVisible = !enabled || isChecked
-                textView.isEnabled = !isChecked
+                textView.isEnabled = true
             }
         }
 
@@ -144,7 +142,7 @@ class TaskViewHolder(
 
         textView.isVisible = inPreview || isChecked || !isEnabled
         setTextViewText(text.toString(), isChecked)
-        textView.isEnabled = !isChecked
+        textView.isEnabled = true
         textView.ellipsize()
 
         editText.isVisible = !inPreview && !isChecked && isEnabled
@@ -161,12 +159,12 @@ class TaskViewHolder(
     }
 
     private fun setTextViewText(text: String, isChecked: Boolean) {
-        binding.textView.text.toSpannable().clearSpans()
-        if (isChecked && text.isNotBlank()) {
-            markwon.setMarkdown(binding.textView, "~~${text.trim()}~~")
-        } else {
-            binding.textView.text = text
-        }
+        binding.textView.setHttpLinkText(text, completed = isChecked)
+        // Keep completed styling without disabling link activation.
+        binding.textView.setTextColor(
+            if (isChecked) taskTextColors.getColorForState(intArrayOf(-android.R.attr.state_enabled), taskTextColors.defaultColor)
+            else taskTextColors.defaultColor
+        )
     }
 
     private fun Int.dp(): Int = this.dp(context)

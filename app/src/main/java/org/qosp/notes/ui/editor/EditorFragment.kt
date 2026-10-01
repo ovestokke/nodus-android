@@ -106,6 +106,7 @@ import org.qosp.notes.ui.utils.resId
 import org.qosp.notes.ui.utils.resolveAttribute
 import org.qosp.notes.ui.utils.shareAttachment
 import org.qosp.notes.ui.utils.shareNote
+import org.qosp.notes.ui.utils.setHttpLinkText
 import org.qosp.notes.ui.utils.viewBinding
 import org.qosp.notes.ui.utils.views.BottomSheet
 import org.qosp.notes.ui.widget.WidgetUpdateHelper
@@ -521,7 +522,6 @@ class EditorFragment : BaseFragment(R.layout.fragment_editor) {
                     jumpToNextTaskOrAdd(position)
                 }
             },
-            markwon = markwon,
         )
 
         binding.recyclerTasks.apply {
@@ -869,7 +869,7 @@ class EditorFragment : BaseFragment(R.layout.fragment_editor) {
                     }
                 }
             } else {
-                textViewContentPreview.text = data.note.content
+                textViewContentPreview.setHttpLinkText(data.note.content)
             }
 
             setupMenuItems(data.note, data.note.reminders.isNotEmpty())

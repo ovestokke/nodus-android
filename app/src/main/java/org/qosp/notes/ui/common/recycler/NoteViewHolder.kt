@@ -26,6 +26,7 @@ import org.qosp.notes.ui.tasks.TasksAdapter
 import org.qosp.notes.ui.utils.dp
 import org.qosp.notes.ui.utils.ellipsize
 import org.qosp.notes.ui.utils.resId
+import org.qosp.notes.ui.utils.setHttpLinkText
 
 class NoteViewHolder(
     private val binding: LayoutNoteBinding,
@@ -37,7 +38,7 @@ class NoteViewHolder(
     attachmentsViewPool: RecyclerView.RecycledViewPool,
 ) : RecyclerView.ViewHolder(binding.root), SelectableViewHolder {
 
-    private val tasksAdapter = TasksAdapter(true, null, markwon)
+    private val tasksAdapter = TasksAdapter(true, null)
     private val attachmentsAdapter = AttachmentsAdapter(null, true)
 
     private val defaultStrokeWidth = 1.dp(context)
@@ -131,7 +132,7 @@ class NoteViewHolder(
                     textViewContent.text = ""
                 }
             } else {
-                textViewContent.text = note.content
+                textViewContent.setHttpLinkText(note.content)
             }
         }
     }
